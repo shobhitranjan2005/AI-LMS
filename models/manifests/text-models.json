@@ -1,0 +1,30 @@
+{
+  "distilbert-sst2-int8-onnx": {
+    "filename": "model_quantized.onnx",
+    "source_url": "https://huggingface.co/fxmarty/distilbert-base-uncased-sst2-onnx-int8-for-tensorrt/resolve/main/model_quantized.onnx",
+    "license": "MIT",
+    "task": "sentiment-classification",
+    "precision": "int8",
+    "local_path": "models/text/model_quantized.onnx",
+    "size_bytes": 268183103,
+    "sha256": "477d0d0c102ed8529620664cc817b927869eddf286c9f78a85f28164300ed101"
+  },
+  "distilbert-sst2-vocab": {
+    "filename": "vocab.txt",
+    "source_url": "https://huggingface.co/fxmarty/distilbert-base-uncased-sst2-onnx-int8-for-tensorrt/resolve/main/vocab.txt",
+    "license": "MIT",
+    "task": "tokenizer",
+    "local_path": "models/text/vocab.txt",
+    "size_bytes": 231508,
+    "sha256": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+  },
+  "distilbert-sst2-config": {
+    "filename": "config.json",
+    "source_url": "https://huggingface.co/fxmarty/distilbert-base-uncased-sst2-onnx-int8-for-tensorrt/resolve/main/config.json",
+    "license": "MIT",
+    "task": "metadata",
+    "local_path": "models/text/config.json",
+    "size_bytes": 735,
+    "sha256": "cd84b1ef0a82049c42aa925a429d5ad895a54853e2095541699a26d52ac1578b"
+  }
+}

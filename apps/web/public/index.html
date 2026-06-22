@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#162237" />
+    <title>AI Learning Playground</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#playground">Skip to playground</a>
+
+    <div class="blossom-scene" aria-hidden="true">
+      <canvas id="sceneCanvas" class="scene-canvas"></canvas>
+      <div class="sky-wash"></div>
+      <div class="mountain-layer mountain-far"></div>
+      <div class="mountain-layer mountain-mid"></div>
+      <div class="mist-layer mist-a"></div>
+      <div class="mist-layer mist-b"></div>
+      <div class="water-plane">
+        <span class="water-glow"></span>
+        <span class="water-ripple ripple-a"></span>
+        <span class="water-ripple ripple-b"></span>
+        <span class="water-ripple ripple-c"></span>
+      </div>
+      <div class="shoreline"></div>
+      <div class="lantern lantern-a"></div>
+      <div class="lantern lantern-b"></div>
+      <div class="branch branch-main"><span></span><span></span><span></span></div>
+      <div class="branch branch-side"><span></span><span></span></div>
+      <div class="petal-field">
+        <span class="petal petal-a"></span>
+        <span class="petal petal-b"></span>
+        <span class="petal petal-c"></span>
+        <span class="petal petal-d"></span>
+        <span class="petal petal-e"></span>
+      </div>
+    </div>
+
+    <header class="app-header">
+      <a class="brand" href="#landing" aria-label="AI Learning Playground home">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span class="brand-copy">
+          <strong>AI Learning Playground</strong>
+          <small>Local interactive labs</small>
+        </span>
+      </a>
+
+      <nav class="nav-links" aria-label="Lab navigation">
+        <a href="#digit-lab" data-lab-link><span aria-hidden="true">D</span>Digit</a>
+        <a href="#image-repair" data-lab-link><span aria-hidden="true">R</span>Repair</a>
+        <a href="#text-lab" data-lab-link><span aria-hidden="true">T</span>Text</a>
+        <a href="#sound-lab" data-lab-link><span aria-hidden="true">S</span>Sound</a>
+        <a href="#style-studio" data-lab-link><span aria-hidden="true">A</span>Style</a>
+        <a href="#model-battle" data-lab-link><span aria-hidden="true">B</span>Battle</a>
+        <a href="#models" data-lab-link><span aria-hidden="true">M</span>Models</a>
+      </nav>
+
+      <div class="header-actions">
+        <div class="trust-pills" aria-label="Local privacy status">
+          <span>Local AI</span>
+          <span>Private</span>
+          <span>Offline</span>
+        </div>
+        <label class="motion-toggle">
+          <input id="calmMotion" type="checkbox" />
+          <span>Calm motion</span>
+        </label>
+        <button class="primary-button compact" type="button" data-enter-playground>Enter</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="landing" class="landing-page" aria-labelledby="landing-title">
+        <div class="hero-content">
+          <p class="eyebrow">Local AI labs in a quiet visual studio</p>
+          <h1 id="landing-title">Explore AI. Understand How It Thinks.</h1>
+          <p class="hero-copy">
+            Experiment with local AI models through visual, interactive labs designed for learning, comparison, and discovery.
+          </p>
+          <div class="hero-actions">
+            <button class="primary-button large" type="button" data-enter-playground>Enter the Playground</button>
+            <a class="secondary-button large" href="#lab-previews">Explore the Labs</a>
+          </div>
+        </div>
+
+        <div id="lab-previews" class="lab-previews" aria-label="Lab previews">
+          <a class="preview-card" href="#digit-lab" data-lab-link>
+            <span class="preview-icon" aria-hidden="true">D</span>
+            <strong>Digit</strong>
+            <span>Draw a number and watch local MNIST models compare confidence.</span>
+          </a>
+          <a class="preview-card" href="#image-repair" data-lab-link>
+            <span class="preview-icon" aria-hidden="true">R</span>
+            <strong>Repair</strong>
+            <span>Damage a small image and inspect the licensed-checkpoint repair path.</span>
+          </a>
+          <a class="preview-card" href="#text-lab" data-lab-link>
+            <span class="preview-icon" aria-hidden="true">T</span>
+            <strong>Text</strong>
+            <span>Swap words and see how a local sentiment model changes its read.</span>
+          </a>
+          <a class="preview-card" href="#sound-lab" data-lab-link>
+            <span class="preview-icon" aria-hidden="true">S</span>
+            <strong>Sound</strong>
+            <span>Generate tones, add noise, and classify waveform patterns locally.</span>
+          </a>
+          <a class="preview-card" href="#style-studio" data-lab-link>
+            <span class="preview-icon" aria-hidden="true">A</span>
+            <strong>Style</strong>
+            <span>Repaint a source image with packaged neural style models.</span>
+          </a>
+          <a class="preview-card" href="#model-battle" data-lab-link>
+            <span class="preview-icon" aria-hidden="true">B</span>
+            <strong>Battle</strong>
+            <span>Compare model outputs, latency, and confidence without cloud calls.</span>
+          </a>
+          <a class="preview-card" href="#models" data-lab-link>
+            <span class="preview-icon" aria-hidden="true">M</span>
+            <strong>Models</strong>
+            <span>Review the local catalog and availability status for every lab.</span>
+          </a>
+        </div>
+      </section>
+
+      <div id="playground" class="playground-shell" tabindex="-1">
+        <section class="workspace-intro" aria-labelledby="workspace-title">
+          <div>
+            <p class="eyebrow">Workspace</p>
+            <h2 id="workspace-title">Hands-on local inference labs</h2>
+          </div>
+          <p id="globalStatus" class="status" role="status" aria-live="polite">
+            Choose a lab, adjust the input, and run the local model.
+          </p>
+        </section>
+
+        <section id="digit-lab" class="lab-section digit-section" aria-labelledby="digit-title">
+          <div class="section-heading">
+            <p class="eyebrow">Digit Lab</p>
+            <h2 id="digit-title">Draw A Digit</h2>
+          </div>
+
+          <div class="digit-grid">
+            <div class="canvas-panel glass-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Input Canvas</p>
+                  <h3>White ink on local pixels</h3>
+                </div>
+                <p id="statusText" class="status" role="status">Loading local models...</p>
+              </div>
+
+              <div class="tool-row" aria-label="Drawing tools">
+                <button type="button" class="tool-button" data-tool="pen" aria-pressed="true">Draw</button>
+                <button type="button" class="tool-button" data-tool="eraser" aria-pressed="false">Erase</button>
+                <button id="clearButton" type="button" class="secondary-button">Clear</button>
+              </div>
+
+              <canvas id="drawingCanvas" width="280" height="280" aria-label="Digit drawing canvas" tabindex="0"></canvas>
+
+              <div class="control-grid">
+                <label>
+                  <span>Stroke <output id="strokeValue" for="strokeWidth">22px</output></span>
+                  <input id="strokeWidth" type="range" min="4" max="44" value="22" />
+                </label>
+                <label>
+                  <span>Rotate <output id="rotationValue" for="rotation">0 deg</output></span>
+                  <input id="rotation" type="range" min="-35" max="35" value="0" />
+                </label>
+                <label>
+                  <span>Noise <output id="noiseValue" for="noise">0%</output></span>
+                  <input id="noise" type="range" min="0" max="0.65" step="0.01" value="0" />
+                </label>
+              </div>
+
+              <div class="action-row">
+                <label class="model-picker">
+                  <span>Model</span>
+                  <select id="modelSelect" aria-label="Digit model"></select>
+                </label>
+                <button id="predictButton" type="button" class="primary-button">Predict</button>
+                <button id="battleButton" type="button" class="primary-button alt">Model Battle</button>
+              </div>
+              <p id="selectedModelNote" class="support-note">Selected model details will appear after the catalog loads.</p>
+            </div>
+
+            <div class="results-panel glass-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Prediction</p>
+                  <h3 id="prediction">-</h3>
+                </div>
+                <img id="previewImage" class="preview-image" alt="" />
+              </div>
+
+              <dl class="metric-grid">
+                <div>
+                  <dt>Confidence</dt>
+                  <dd id="confidence">-</dd>
+                </div>
+                <div>
+                  <dt>Latency</dt>
+                  <dd id="latency">-</dd>
+                </div>
+              </dl>
+
+              <div id="probabilities" class="probabilities" aria-label="Prediction probabilities"></div>
+              <p id="srSummary" class="sr-only" aria-live="polite"></p>
+            </div>
+          </div>
+        </section>
+
+        <section id="image-repair" class="lab-section" aria-labelledby="repair-title">
+          <div class="section-heading">
+            <p class="eyebrow">Image Repair Studio</p>
+            <h2 id="repair-title">Before And After Workflow</h2>
+          </div>
+
+          <div class="lab-grid two-column">
+            <div class="glass-panel">
+              <div class="panel-heading compact">
+                <div>
+                  <p class="eyebrow">Upload Or Input</p>
+                  <h3>Original preview</h3>
+                </div>
+              </div>
+              <label class="file-control">
+                <span>Source image</span>
+                <input id="repairUpload" type="file" accept="image/*" />
+              </label>
+              <canvas id="repairCanvas" class="mini-canvas" width="224" height="224" aria-label="Editable repair image"></canvas>
+              <div class="action-row">
+                <button id="repairSampleButton" class="secondary-button" type="button">New Sample</button>
+                <button id="repairDamageButton" class="secondary-button" type="button">Damage</button>
+                <button id="repairRunButton" class="primary-button" type="button">Repair</button>
+              </div>
+            </div>
+
+            <div class="glass-panel">
+              <div class="panel-heading compact">
+                <div>
+                  <p class="eyebrow">Repair Controls</p>
+                  <h3>Checkpoint status</h3>
+                </div>
+              </div>
+              <div class="control-grid single">
+                <label>
+                  <span>Damage <output id="repairStrengthValue" for="repairStrength">40%</output></span>
+                  <input id="repairStrength" type="range" min="0" max="1" step="0.01" value="0.4" />
+                </label>
+                <label>
+                  <span>Type</span>
+                  <select id="repairDamage">
+                    <option value="noise">Noise</option>
+                    <option value="block">Missing block</option>
+                  </select>
+                </label>
+              </div>
+              <div class="comparison-shell" aria-label="Repair comparison">
+                <div>
+                  <span>Original</span>
+                  <canvas id="repairBeforeCanvas" class="mini-canvas comparison-canvas" width="224" height="224" aria-label="Original repair preview"></canvas>
+                </div>
+                <div>
+                  <span>Repaired</span>
+                  <div id="repairAfterPreview" class="empty-preview">Awaiting compatible model</div>
+                </div>
+              </div>
+              <p id="repairStatus" class="status notice" role="status">
+                Awaiting licensed autoencoder checkpoint.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="text-lab" class="lab-section" aria-labelledby="text-title">
+          <div class="section-heading">
+            <p class="eyebrow">Emotion And Text Lab</p>
+            <h2 id="text-title">Change One Word</h2>
+          </div>
+
+          <div class="lab-grid two-column">
+            <div class="glass-panel">
+              <label class="stacked-label">
+                <span>Sentence</span>
+                <textarea id="textInput" rows="7">I loved this bright and wonderful lesson.</textarea>
+              </label>
+              <div class="action-row">
+                <button id="textPredictButton" class="primary-button" type="button">Read Mood</button>
+                <button id="textSwapButton" class="secondary-button" type="button">Swap Word</button>
+                <button id="textBattleButton" class="secondary-button" type="button">Battle Edit</button>
+              </div>
+            </div>
+
+            <div class="glass-panel">
+              <div class="panel-heading compact">
+                <div>
+                  <p class="eyebrow">Result</p>
+                  <h3>Prediction and explanation</h3>
+                </div>
+              </div>
+              <div id="textResult" class="result-stack" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="sound-lab" class="lab-section" aria-labelledby="sound-title">
+          <div class="section-heading">
+            <p class="eyebrow">Sound Lab</p>
+            <h2 id="sound-title">Build A Sound</h2>
+          </div>
+
+          <div class="lab-grid two-column">
+            <div class="glass-panel">
+              <canvas id="soundCanvas" class="wide-canvas" width="420" height="120" aria-label="Generated waveform"></canvas>
+              <div class="control-grid">
+                <label>
+                  <span>Pitch <output id="soundFreqValue" for="soundFreq">440 Hz</output></span>
+                  <input id="soundFreq" type="range" min="120" max="1200" value="440" />
+                </label>
+                <label>
+                  <span>Gain <output id="soundGainValue" for="soundGain">1.0</output></span>
+                  <input id="soundGain" type="range" min="0.2" max="2" step="0.1" value="1" />
+                </label>
+                <label>
+                  <span>Noise <output id="soundNoiseValue" for="soundNoise">0%</output></span>
+                  <input id="soundNoise" type="range" min="0" max="1" step="0.01" value="0" />
+                </label>
+              </div>
+              <div class="action-row">
+                <button id="soundGenerateButton" class="secondary-button" type="button">Generate</button>
+                <button id="soundPredictButton" class="primary-button" type="button">Classify</button>
+                <button id="soundBattleButton" class="secondary-button" type="button">Noise Battle</button>
+              </div>
+            </div>
+
+            <div class="glass-panel">
+              <div class="panel-heading compact">
+                <div>
+                  <p class="eyebrow">Classification</p>
+                  <h3>YAMNet result</h3>
+                </div>
+              </div>
+              <div id="soundResult" class="result-stack" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="style-studio" class="lab-section" aria-labelledby="style-title">
+          <div class="section-heading">
+            <p class="eyebrow">Style And Colour Studio</p>
+            <h2 id="style-title">Repaint A Scene</h2>
+          </div>
+
+          <div class="lab-grid two-column">
+            <div class="glass-panel">
+              <label class="file-control">
+                <span>Source image</span>
+                <input id="styleUpload" type="file" accept="image/*" />
+              </label>
+              <div class="image-pair">
+                <div>
+                  <span class="preview-label">Source</span>
+                  <canvas id="styleCanvas" class="mini-canvas" width="224" height="224" aria-label="Editable style input image"></canvas>
+                </div>
+                <div>
+                  <span class="preview-label">Styled</span>
+                  <img id="styleOutput" class="style-output" alt="Styled output preview" />
+                </div>
+              </div>
+              <div class="control-grid">
+                <label>
+                  <span>Style</span>
+                  <select id="styleSelect">
+                    <option value="mosaic-9">Mosaic</option>
+                    <option value="candy-9">Candy</option>
+                    <option value="rain-princess-9">Rain Princess</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Intensity <output id="styleIntensityValue" for="styleIntensity">80%</output></span>
+                  <input id="styleIntensity" type="range" min="0" max="1" step="0.01" value="0.8" />
+                </label>
+                <label>
+                  <span>Colour <output id="styleSaturationValue" for="styleSaturation">100%</output></span>
+                  <input id="styleSaturation" type="range" min="0" max="2" step="0.05" value="1" />
+                </label>
+              </div>
+              <div class="action-row">
+                <button id="styleSampleButton" class="secondary-button" type="button">New Scene</button>
+                <button id="styleRunButton" class="primary-button" type="button">Stylize</button>
+                <button id="styleBattleButton" class="secondary-button" type="button">Style Battle</button>
+              </div>
+            </div>
+
+            <div class="glass-panel">
+              <div class="panel-heading compact">
+                <div>
+                  <p class="eyebrow">Processed Result</p>
+                  <h3>Model output</h3>
+                </div>
+              </div>
+              <div id="styleResult" class="result-stack" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="learning" class="lab-section support-section" aria-labelledby="learning-title">
+          <div class="glass-panel">
+            <div class="panel-heading compact">
+              <div>
+                <p class="eyebrow">Learn</p>
+                <h2 id="learning-title">Explanation Mode</h2>
+              </div>
+            </div>
+            <label class="stacked-label compact-label">
+              <span>Depth</span>
+              <select id="educationMode">
+                <option value="simple">Simple</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </label>
+            <div id="educationText" class="learning-copy"></div>
+            <div id="challengeList" class="challenge-list"></div>
+          </div>
+
+          <div class="glass-panel" aria-labelledby="experiments-title">
+            <div class="panel-heading compact">
+              <div>
+                <p class="eyebrow">Compare</p>
+                <h2 id="experiments-title">Experiments</h2>
+              </div>
+              <p id="comparisonText" class="status">Run a prediction to compare experiments.</p>
+            </div>
+            <div id="historyList" class="history-list"></div>
+          </div>
+        </section>
+
+        <section id="model-battle" class="lab-section" aria-labelledby="battle-title">
+          <div class="section-heading">
+            <p class="eyebrow">Battle</p>
+            <h2 id="battle-title">Model Comparison</h2>
+          </div>
+          <div class="lab-grid two-column">
+            <div class="glass-panel">
+              <div class="panel-heading compact">
+                <div>
+                  <p class="eyebrow">Digit Battle</p>
+                  <h3>Float32 vs int8</h3>
+                </div>
+              </div>
+              <div id="battleResults" class="battle-results">
+                <p class="status">Run Model Battle to compare local ONNX models.</p>
+              </div>
+            </div>
+            <div class="glass-panel">
+              <div class="panel-heading compact">
+                <div>
+                  <p class="eyebrow">Cross Lab Battles</p>
+                  <h3>Latest comparison</h3>
+                </div>
+              </div>
+              <div id="crossBattleResults" class="battle-results"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="models" class="lab-section" aria-labelledby="models-title">
+          <div class="section-heading">
+            <p class="eyebrow">Offline</p>
+            <h2 id="models-title">Local Models</h2>
+          </div>
+          <div class="glass-panel model-note">
+            <p id="modelCatalogSummary" class="status">Loading local model catalog...</p>
+            <div id="modelCatalog" class="model-catalog" aria-live="polite"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  </body>
+</html>
