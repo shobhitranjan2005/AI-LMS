@@ -1,0 +1,6 @@
+Visual integration completed.
+
+- Added cinematic opening page and Continue to the Lab navigation.
+- Added local shared background asset and CSS theme.
+- Updated typography, glass surfaces, palette, and restrained ambient motion.
+- Did not modify algorithm/training JavaScript. Script hashes were verified before packaging.

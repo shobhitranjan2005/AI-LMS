@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>K-Nearest Neighbors</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --window-bg:#1e1e1e;
+    --toolbar-bg:rgba(50,50,52,0.6);
+    --sidebar-bg:rgba(38,38,40,0.6);
+    --canvas-bg:#232325;
+    --separator:rgba(255,255,255,0.08);
+    --separator-strong:rgba(255,255,255,0.12);
+    --label:#ffffff;
+    --secondary-label:#8e8e93;
+    --tertiary-label:#48484a;
+    --accent:#d7a85f;
+    --accent-bright:#f2c978;
+    --violet:#9b79b8;
+    --green:#b8d7ad;
+    --red:#d98f82;
+    --blue:#5b9dd9;
+    --traffic-red:#ff5f57;
+    --traffic-yellow:#febc2e;
+    --traffic-green:#28c840;
+  }
+  html,body{
+    height:100%;overflow:hidden;
+    background:#0a0a0a;
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    color:var(--label);
+    user-select:none;
+  }
+  .window{
+    position:absolute;
+    inset:0;
+    background:var(--window-bg);
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 0 0 1px rgba(0,0,0,0.5), 0 20px 60px rgba(0,0,0,0.5);
+    display:flex;
+    flex-direction:column;
+  }
+  .toolbar{
+    height:52px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:0 12px;
+    background:var(--toolbar-bg);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:1px solid var(--separator);
+    position:relative;
+    z-index:20;
+  }
+  .nav-back{
+    display:flex;align-items:center;gap:3px;
+    color:var(--accent-bright);text-decoration:none;
+    font-size:13px;font-weight:500;
+    padding:4px 8px 4px 4px;
+    border-radius:6px;
+    transition:background 0.15s;
+  }
+  .nav-back:hover{background:rgba(255,255,255,0.06)}
+  .nav-back svg{width:12px;height:12px}
+  .window-title{
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    color:var(--label);
+    min-width:0;
+  }
+  .toolbar-spacer{flex:1}
+  .eq-field{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:rgba(0,0,0,0.3);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:4px 10px;
+    min-width:200px;
+    cursor:text;
+    transition:border-color 0.15s;
+  }
+  .eq-field:hover{border-color:var(--separator-strong)}
+  .eq-field .eq-prefix{
+    font-size:12px;
+    color:var(--accent-bright);
+    font-family:'SF Mono',ui-monospace,monospace;
+    font-weight:500;
+  }
+  .eq-field .eq-text{
+    font-size:12px;
+    color:var(--secondary-label);
+    font-family:'SF Mono',ui-monospace,monospace;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .eq-field .eq-text.active{color:var(--label)}
+  .segmented{
+    display:flex;
+    background:rgba(0,0,0,0.3);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:1px;
+    overflow:hidden;
+  }
+  .segmented button{
+    padding:4px 12px;
+    font-size:11px;
+    font-weight:500;
+    border:none;
+    background:transparent;
+    color:var(--secondary-label);
+    cursor:pointer;
+    transition:all 0.15s;
+    font-family:inherit;
+    border-radius:5px;
+  }
+  .segmented button:hover{color:var(--label)}
+  .segmented button.active{
+    background:rgba(255,255,255,0.12);
+    color:var(--label);
+    box-shadow:0 1px 2px rgba(0,0,0,0.2);
+  }
+  .toolbar-btn{
+    width:28px;height:28px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:6px;border:none;cursor:pointer;
+    background:transparent;color:var(--secondary-label);
+    transition:all 0.15s;
+  }
+  .toolbar-btn:hover{background:rgba(255,255,255,0.08);color:var(--label)}
+  .toolbar-btn:active{background:rgba(255,255,255,0.15)}
+  .toolbar-btn svg{width:15px;height:15px}
+  .canvas-area{
+    flex:1;
+    position:relative;
+    background:var(--canvas-bg);
+    overflow:hidden;
+  }
+  #c{
+    display:block;
+    width:100%;
+    height:100%;
+  }
+  .statusbar{
+    height:24px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    padding:0 12px;
+    gap:16px;
+    background:var(--toolbar-bg);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-top:1px solid var(--separator);
+    font-size:11px;
+    color:var(--secondary-label);
+  }
+  .statusbar .status-item{display:flex;align-items:center;gap:4px;}
+  .statusbar .status-item .label{color:var(--tertiary-label)}
+  .statusbar .status-item .value{
+    color:var(--secondary-label);
+    font-family:'SF Mono',ui-monospace,monospace;
+  }
+  .statusbar .status-spacer{flex:1}
+  .statusbar .status-dot{
+    width:7px;height:7px;
+    border-radius:50%;
+    background:var(--tertiary-label);
+  }
+  .statusbar .status-dot.live{
+    background:var(--green);
+    box-shadow:0 0 6px rgba(184,215,173,0.5);
+  }
+  .statusbar .status-dot.paused{background:var(--accent-bright)}
+  .statusbar .status-dot.done{background:var(--accent)}
+  .statusbar .status-text{
+    color:var(--secondary-label);
+    font-weight:500;
+  }
+  .sheet-backdrop{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,0.3);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.25s;
+    z-index:30;
+  }
+  .sheet-backdrop.show{
+    opacity:1;
+    pointer-events:auto;
+  }
+  .sheet{
+    position:absolute;
+    top:52px;
+    left:50%;
+    transform:translateX(-50%) translateY(-20px);
+    width:560px;
+    max-width:calc(100% - 32px);
+    background:rgba(44,44,46,0.95);
+    backdrop-filter:saturate(180%) blur(40px);
+    -webkit-backdrop-filter:saturate(180%) blur(40px);
+    border:1px solid var(--separator-strong);
+    border-radius:12px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+    opacity:0;
+    pointer-events:none;
+    transition:all 0.25s cubic-bezier(0.32,0.72,0,1);
+    z-index:40;
+    overflow:hidden;
+  }
+  .sheet.show{
+    opacity:1;
+    pointer-events:auto;
+    transform:translateX(-50%) translateY(0);
+  }
+  .sheet-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 18px;
+    border-bottom:1px solid var(--separator);
+  }
+  .sheet-title{
+    font-size:13px;
+    font-weight:600;
+    color:var(--label);
+  }
+  .sheet-close{
+    width:20px;height:20px;
+    border-radius:4px;border:none;
+    background:transparent;color:var(--secondary-label);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .sheet-close:hover{background:rgba(255,255,255,0.1);color:var(--label)}
+  .sheet-close svg{width:10px;height:10px}
+  .sheet-body{
+    padding:18px;
+    max-height:60vh;
+    overflow-y:auto;
+  }
+  .sheet-section{margin-bottom:20px}
+  .sheet-section:last-child{margin-bottom:0}
+  .sheet-label{
+    font-size:11px;
+    font-weight:600;
+    color:var(--secondary-label);
+    margin-bottom:8px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  .sheet .segmented{width:100%;}
+  .sheet .segmented button{
+    flex:1;
+    padding:6px;
+    font-size:12px;
+  }
+  .sheet .eq-input{
+    display:flex;align-items:center;gap:8px;
+    background:rgba(0,0,0,0.4);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:6px 10px;
+    margin-bottom:10px;
+    transition:border-color 0.15s;
+  }
+  .sheet .eq-input:focus-within{border-color:var(--accent)}
+  .sheet .eq-input .prefix{
+    font-size:13px;font-weight:500;color:var(--accent-bright);
+    font-family:'SF Mono',monospace;
+  }
+  .sheet .eq-input input{
+    flex:1;background:none;border:none;outline:none;
+    font-size:13px;color:var(--label);
+    font-family:'SF Mono',monospace;
+  }
+  .preset-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(70px,1fr));
+    gap:4px;
+    margin-bottom:10px;
+  }
+  .preset{
+    padding:5px;border-radius:5px;
+    font-size:10px;font-family:'SF Mono',monospace;
+    background:rgba(0,0,0,0.3);
+    border:1px solid var(--separator);
+    color:var(--secondary-label);cursor:pointer;
+    transition:all 0.15s;text-align:center;
+  }
+  .preset:hover{
+    background:rgba(215,168,95,0.1);color:var(--accent-bright);
+    border-color:rgba(215,168,95,0.3);
+  }
+  .control-row{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:4px;
+  }
+  .control-row .name{font-size:12px;color:var(--secondary-label)}
+  .control-row .value{
+    font-size:12px;font-weight:500;color:var(--label);
+    font-family:'SF Mono',monospace;
+  }
+  input[type=range]{
+    width:100%;height:4px;
+    -webkit-appearance:none;appearance:none;
+    background:rgba(255,255,255,0.1);
+    border-radius:2px;outline:none;
+    margin-bottom:12px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:14px;height:14px;
+    border-radius:50%;
+    background:#fff;
+    cursor:pointer;
+    box-shadow:0 1px 3px rgba(0,0,0,0.3);
+  }
+  input[type=number]{
+    width:100%;
+    background:rgba(0,0,0,0.4);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:5px 8px;
+    font-size:12px;color:var(--label);
+    font-family:monospace;
+    margin-bottom:10px;outline:none;
+  }
+  select{
+    width:100%;
+    background:rgba(0,0,0,0.4);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:5px 24px 5px 8px;
+    font-size:12px;color:var(--label);
+    cursor:pointer;outline:none;appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238e8e93' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 6px center;
+  }
+  .eq-status{
+    font-size:11px;
+    font-family:'SF Mono',monospace;
+    padding:6px 8px;
+    border-radius:5px;
+    margin-bottom:8px;
+    word-break:break-all;
+  }
+  .eq-status.ok{background:rgba(184,215,173,0.08);color:var(--green)}
+  .eq-status.error{background:rgba(217,143,130,0.08);color:var(--red)}
+  .eq-status.inactive{background:rgba(255,255,255,0.04);color:var(--tertiary-label)}
+  .btn-primary{
+    width:100%;
+    background:var(--accent);
+    color:#1a1209;font-weight:600;
+    border:none;border-radius:6px;
+    padding:8px;font-size:13px;
+    cursor:pointer;transition:all 0.15s;
+    font-family:inherit;
+  }
+  .btn-primary:hover{background:var(--accent-bright)}
+  .btn-primary:active{transform:scale(0.98)}
+  .hint{
+    font-size:11px;color:var(--tertiary-label);
+    line-height:1.4;margin-top:6px;
+  }
+  .eq-section.disabled{
+    opacity:0.4;
+    pointer-events:none;
+  }
+  .compat{display:none}
+  @media(max-width:700px){
+    .eq-field{display:none}
+    .window-title{font-size:12px}
+  }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="emergence-theme.css">
+</head>
+<body>
+
+<div class="window">
+
+  <div class="toolbar">
+    <a href="index.html" class="nav-back" title="Back to ML Lab">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M10 3L5 8l5 5V3z"/></svg>
+      <span>ML Lab</span>
+    </a>
+    <div class="window-title">K-Nearest Neighbors</div>
+
+    <div class="eq-field" id="eqField" title="Click to customize">
+      <span class="eq-prefix">class 1 if</span>
+      <span class="eq-text" id="eqDisplay">x − y &gt; 0 (built-in)</span>
+    </div>
+
+    <div class="toolbar-spacer"></div>
+
+    <div class="segmented" id="viewControl">
+      <button class="active" data-mode="build">Build</button>
+      <button data-mode="neighbors">Neighbors</button>
+      <button data-mode="validation">Validation</button>
+      <button data-mode="truth">About</button>
+    </div>
+
+    <button class="toolbar-btn" id="playBtn" title="Play">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l9 5-9 5V3z"/></svg>
+    </button>
+    <button class="toolbar-btn" id="stepBtn" title="Step">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l7 5-7 5V3zm9 0h2v10h-2z"/></svg>
+    </button>
+    <button class="toolbar-btn" id="resetBtn" title="Reset">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 3a5 5 0 100 10 5 5 0 000-10zm0-2L5 4l3 3V1z"/></svg>
+    </button>
+
+    <button class="toolbar-btn" id="settingsBtn" title="Customize">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 6a2 2 0 100 4 2 2 0 000-4zm0-4l1 2h2l-1.5 1.5L11 8l-2-1-1-2-1 2-2 1 1.5-1.5L5 4h2l1-2z"/></svg>
+    </button>
+  </div>
+
+  <div class="canvas-area">
+    <canvas id="c"></canvas>
+  </div>
+
+  <div class="statusbar">
+    <div class="status-item">
+      <span class="label">K:</span>
+      <span class="value" id="sModel">3 (uniform)</span>
+    </div>
+    <div class="status-item">
+      <span class="label">Stored:</span>
+      <span class="value" id="sEpoch">4/60</span>
+    </div>
+    <div class="status-item">
+      <span class="label">Val Err:</span>
+      <span class="value" id="sLoss">—</span>
+    </div>
+    <div class="status-item">
+      <span class="label">Query:</span>
+      <span class="value" id="sAcc">Class A 100%</span>
+    </div>
+    <div class="status-spacer"></div>
+    <div class="status-dot" id="sDot"></div>
+    <span class="status-text" id="sStatus">Idle</span>
+  </div>
+
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="sheet" id="sheet">
+    <div class="sheet-header">
+      <div class="sheet-title">Customize</div>
+      <button class="sheet-close" id="sheetClose">
+        <svg viewBox="0 0 12 12" fill="currentColor"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+
+      <div class="sheet-section">
+        <div class="sheet-label">Data Source</div>
+        <div class="segmented" id="sourceToggle">
+          <button class="active" data-source="original">Built-in data</button>
+          <button data-source="equation">Equation-driven</button>
+        </div>
+      </div>
+
+      <div class="sheet-section eq-section disabled" id="eqSection">
+        <div class="sheet-label">Equation — class 1 if equation &gt; 0</div>
+        <div class="eq-input">
+          <span class="prefix">class 1 if</span>
+          <input id="eqInput" type="text" placeholder="x - y" value="x - y">
+          <span class="prefix">&gt; 0</span>
+        </div>
+        <div class="preset-grid">
+          <button class="preset" data-eq="x - y">x−y&gt;0</button>
+          <button class="preset" data-eq="y - sin(5*x)">y−sin5x&gt;0</button>
+          <button class="preset" data-eq="sin(3*x) - y">sin3x−y&gt;0</button>
+          <button class="preset" data-eq="x^2 + y^2 - 0.4">circle</button>
+          <button class="preset" data-eq="(x-0.5)^2 + (y-0.5)^2 - 0.15">ring</button>
+          <button class="preset" data-eq="x*y - 0.2">x·y&gt;0.2</button>
+          <button class="preset" data-eq="abs(x-y) - 0.3">|x−y|&gt;0.3</button>
+          <button class="preset" data-eq="sin(4*x)*cos(4*y)">sin·cos</button>
+          <button class="preset" data-eq="2*x + 3*y - 2">2x+3y&gt;2</button>
+        </div>
+        <div class="control-row">
+          <span class="name">Samples</span>
+          <span class="value" id="samplesVal">120</span>
+        </div>
+        <input type="number" id="eqSamples" min="20" max="500" value="120" step="10">
+        <div class="control-row">
+          <span class="name">Label Noise</span>
+          <span class="value" id="noiseVal">5%</span>
+        </div>
+        <input type="range" id="eqNoise" min="0" max="0.3" step="0.01" value="0.05">
+        <div class="eq-status inactive" id="eqStatus">Inactive — switch to Equation-driven</div>
+        <button class="btn-primary" id="eqApply">Generate from equation</button>
+        <div class="hint">KNN stores examples and votes by distance. Curved boundaries work as well as linear ones — KNN is non-parametric.</div>
+      </div>
+
+      <div class="sheet-section">
+        <div class="sheet-label">KNN Parameters</div>
+        <div class="control-row">
+          <span class="name">K (neighbors)</span>
+          <span class="value" id="kVal">3</span>
+        </div>
+        <input type="range" id="k" min="1" max="15" step="2" value="3">
+        <div class="control-row">
+          <span class="name">Distance Metric</span>
+          <span class="value" id="metricVal">Euclidean</span>
+        </div>
+        <select id="metric">
+          <option value="euclidean" selected>Euclidean</option>
+          <option value="manhattan">Manhattan</option>
+        </select>
+        <div class="control-row">
+          <span class="name">Voting</span>
+          <span class="value" id="voteVal">Uniform</span>
+        </div>
+        <select id="vote">
+          <option value="uniform" selected>Uniform</option>
+          <option value="distance">Distance weighted</option>
+        </select>
+        <div class="control-row">
+          <span class="name">Speed</span>
+          <span class="value" id="speedVal">Slow</span>
+        </div>
+        <select id="speed">
+          <option value="1200">Very slow</option>
+          <option value="800" selected>Slow</option>
+          <option value="450">Normal</option>
+          <option value="220">Fast</option>
+          <option value="2.2">Ultra Fast (100×)</option>
+        </select>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="compat" id="note"></div>
+<div class="compat" id="badge"></div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const c=$('c'),ctx=c.getContext('2d');
+const kEl=$('k'),metricEl=$('metric'),voteEl=$('vote'),speedEl=$('speed');
+
+let mode='build';
+let points=[];
+let order=[];
+let storedCount=4;
+let query={x:.52,y:.52};
+let revealed=0;
+let buildPlaying=false,neighborPlaying=false,paused=false;
+let lastTime=0,accum=0;
+let raf=null;
+let regionCache=null,regionKey='';
+let dataVersion=0;
+let drag=false,lastPX=0,lastPY=0;
+
+let currentEq=null,currentEqStr='x - y';
+let dataSource='original';
+function parseEquation(input){
+  let expr=(input||'').trim().toLowerCase();
+  if(!expr)return null;
+  expr=expr.replace(/^class\s+[+-]?\d+\s+if\s+/,'');
+  expr=expr.replace(/\s*>\s*=?\s*0\s*$/,'');
+  expr=expr.replace(/^y\s*=\s*/,'');
+  expr=expr.replace(/\^/g,'**');
+  expr=expr.replace(/(\d)\s*x/g,'$1*x');
+  expr=expr.replace(/(\d)\s*y/g,'$1*y');
+  ['sin','cos','tan','exp','log','sqrt','abs','sinh','cosh','tanh','atan','asin','acos','atan2','floor','ceil','sign'].forEach(fn=>{expr=expr.replace(new RegExp('\\b'+fn+'\\b','g'),'Math.'+fn);});
+  expr=expr.replace(/\bpi\b/g,'Math.PI');expr=expr.replace(/\be(?!xp)/g,'Math.E');
+  try{const fn=new Function('x','y','return '+expr);const test=fn(1,1);if(typeof test!=='number'||!isFinite(test))return null;return fn;}catch(e){return null;}
+}
+function applyEquation(){
+  const input=$('eqInput').value;const fn=parseEquation(input);const status=$('eqStatus');
+  if(fn){currentEq=fn;currentEqStr=input.trim();status.textContent='Active: class 1 if '+currentEqStr+' > 0';status.className='eq-status ok';updateEqDisplay();generateData();resetBuild();}
+  else{status.textContent='Error: cannot parse "'+input+'"';status.className='eq-status error';}
+}
+function updateEqDisplay(){
+  const disp=$('eqDisplay');
+  if(dataSource==='equation'&&currentEq){disp.textContent=currentEqStr+' > 0';disp.classList.add('active');}
+  else{disp.textContent='x − y > 0 (built-in)';disp.classList.remove('active');}
+}
+function setDataSource(source){
+  dataSource=source;
+  document.querySelectorAll('#sourceToggle button').forEach(btn=>btn.classList.toggle('active',btn.dataset.source===source));
+  const eqSection=$('eqSection');
+  if(source==='equation'){eqSection.classList.remove('disabled');applyEquation();}
+  else{eqSection.classList.add('disabled');$('eqStatus').textContent='Inactive — switch to Equation-driven';$('eqStatus').className='eq-status inactive';updateEqDisplay();generateData();resetBuild();}
+}
+function getEqSamples(){return parseInt($('eqSamples')?.value)||120;}
+function getEqNoise(){const v=parseFloat($('eqNoise')?.value);return isNaN(v)?0.05:v;}
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function map(v,a,b,c,d){return c+(v-a)*(d-c)/(b-a)}
+function randn(){
+  let u=0,v=0;
+  while(u===0)u=Math.random();
+  while(v===0)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function generateData(){
+  points=[];
+  if(dataSource==='equation'&&currentEq){
+    const N=getEqSamples();const noiseFraction=getEqNoise();
+    for(let i=0;i<N;i++){
+      const x=0.04+0.92*Math.random();
+      const y=0.04+0.92*Math.random();
+      try{
+        const val=currentEq(x,y);
+        let cls=val>0?1:0;
+        if(Math.random()<noiseFraction)cls=1-cls;
+        points.push({x,y,cls});
+      }catch(e){}
+    }
+  }else{
+    for(let i=0;i<30;i++){
+      points.push({
+        x:clamp(.27+randn()*.14,.04,.96),
+        y:clamp(.60+randn()*.16,.04,.96),
+        cls:0
+      });
+    }
+    for(let i=0;i<30;i++){
+      points.push({
+        x:clamp(.73+randn()*.14,.04,.96),
+        y:clamp(.40+randn()*.16,.04,.96),
+        cls:1
+      });
+    }
+  }
+  order=[...Array(points.length).keys()];
+  for(let i=order.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [order[i],order[j]]=[order[j],order[i]];
+  }
+  dataVersion++;
+  storedCount=4;
+  revealed=0;
+  regionCache=null;
+}
+function storedIndices(){
+  return order.slice(0,storedCount);
+}
+function distance(a,b){
+  return metricEl.value==='manhattan'
+    ? Math.abs(a.x-b.x)+Math.abs(a.y-b.y)
+    : Math.hypot(a.x-b.x,a.y-b.y);
+}
+function nearestFor(q,k=+kEl.value,indices=storedIndices(),exclude=-1){
+  return indices
+    .filter(i=>i!==exclude)
+    .map(i=>({p:points[i],i,d:distance(q,points[i])}))
+    .sort((a,b)=>a.d-b.d)
+    .slice(0,Math.min(k,Math.max(1,indices.length-(exclude>=0?1:0))));
+}
+function predict(q,k=+kEl.value,indices=storedIndices(),exclude=-1){
+  const ns=nearestFor(q,k,indices,exclude);
+  let a=0,b=0;
+  ns.forEach(n=>{
+    const weight=voteEl.value==='distance'?1/(n.d+0.025):1;
+    if(n.p.cls===0)a+=weight; else b+=weight;
+  });
+  const total=a+b||1;
+  return {
+    cls:b>a?1:0,a,b,neighbors:ns,
+    confidence:Math.max(a,b)/total
+  };
+}
+function validationError(k=+kEl.value){
+  if(storedCount<3)return null;
+  const idx=storedIndices();
+  let wrong=0,tested=0;
+  idx.forEach(i=>{
+    const available=idx.filter(j=>j!==i);
+    if(!available.length)return;
+    const pr=predict(points[i],Math.min(k,available.length),idx,i);
+    wrong+=pr.cls!==points[i].cls?1:0;
+    tested++;
+  });
+  return tested?wrong/tested:null;
+}
+function queryPrediction(){
+  return predict(query,+kEl.value);
+}
+function updateStatus(){
+  const pr=queryPrediction();
+  const err=validationError();
+  $('kVal').textContent=kEl.value;
+  $('metricVal').textContent=metricEl.selectedOptions[0].text;
+  $('voteVal').textContent=voteEl.value==='uniform'?'Uniform':'Distance weighted';
+  $('speedVal').textContent=speedEl.selectedOptions[0].text;
+  $('samplesVal').textContent=$('eqSamples').value;
+  $('noiseVal').textContent=Math.round(parseFloat($('eqNoise').value)*100)+'%';
+  $('sModel').textContent=`K=${kEl.value} (${voteEl.value==='uniform'?'uniform':'weighted'})`;
+  $('sEpoch').textContent=`${storedCount}/${points.length}`;
+  $('sLoss').textContent=err===null?'—':`${Math.round(err*100)}%`;
+  $('sAcc').textContent=`${pr.cls===0?'Class A':'Class B'} ${Math.round(pr.confidence*100)}%`;
+  const dot=$('sDot'),txt=$('sStatus'),playBtn=$('playBtn');
+  const isPlaying=(buildPlaying||neighborPlaying)&&!paused;
+  const isDone=(mode==='build'&&storedCount>=points.length);
+  if(isPlaying){
+    dot.className='status-dot live';txt.textContent='Running';
+    playBtn.innerHTML='<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3h3v10H4zm5 0h3v10H9z"/></svg>';
+  }else{
+    dot.className=isDone?'status-dot done':(paused?'status-dot paused':'status-dot');
+    txt.textContent=isDone?'Complete':(paused?'Paused':'Idle');
+    playBtn.innerHTML='<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l9 5-9 5V3z"/></svg>';
+  }
+}
+function resize(){
+  const r=c.getBoundingClientRect(),d=devicePixelRatio||1;
+  c.width=r.width*d;c.height=r.height*d;
+  ctx.setTransform(d,0,0,d,0,0);
+  regionCache=null;draw();
+}
+addEventListener('resize',resize);
+
+function text(t,x,y,color='#f3eadc',size=12,align='center',weight='400'){
+  ctx.save();ctx.fillStyle=color;ctx.font=`${weight} ${size}px system-ui`;ctx.textAlign=align;ctx.fillText(t,x,y);ctx.restore();
+}
+function line(a,b,color='rgba(215,168,95,.25)',width=2,dash=[]){
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);
+  ctx.beginPath();ctx.moveTo(...a);ctx.lineTo(...b);ctx.stroke();ctx.restore();
+}
+function dot(x,y,r,color,blur=0){
+  ctx.save();ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=blur;
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.restore();
+}
+function ring(x,y,r,color,width=2){
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke();ctx.restore();
+}
+function box(x,y,w,h,fill='rgba(15,12,9,.80)',stroke='rgba(215,168,95,.18)'){
+  ctx.save();ctx.fillStyle=fill;ctx.strokeStyle=stroke;
+  ctx.beginPath();ctx.roundRect(x,y,w,h,12);ctx.fill();ctx.stroke();ctx.restore();
+}
+function graphArea(W,H,padRight=0){
+  return {left:75,right:W-55-padRight,top:55,bottom:H-75};
+}
+function pxX(x,W,H,padRight=0){const g=graphArea(W,H,padRight);return g.left+x*(g.right-g.left)}
+function pxY(y,W,H,padRight=0){const g=graphArea(W,H,padRight);return g.bottom-y*(g.bottom-g.top)}
+function drawGrid(W,H,padRight=0){
+  const g=graphArea(W,H,padRight);
+  ctx.save();ctx.strokeStyle='rgba(215,168,95,.05)';
+  for(let i=0;i<=10;i++){
+    const x=g.left+i/10*(g.right-g.left);
+    ctx.beginPath();ctx.moveTo(x,g.top);ctx.lineTo(x,g.bottom);ctx.stroke();
+    const y=g.top+i/10*(g.bottom-g.top);
+    ctx.beginPath();ctx.moveTo(g.left,y);ctx.lineTo(g.right,y);ctx.stroke();
+  }
+  ctx.restore();
+  line([g.left,g.bottom],[g.right,g.bottom],'rgba(243,234,220,.28)',1.2);
+  line([g.left,g.top],[g.left,g.bottom],'rgba(243,234,220,.28)',1.2);
+}
+function regionImage(W,H){
+  const g=graphArea(W,H);
+  const key=`${Math.round(W)}-${Math.round(H)}-${storedCount}-${kEl.value}-${metricEl.value}-${voteEl.value}-${dataVersion}`;
+  if(regionCache&&key===regionKey)return regionCache;
+
+  const off=document.createElement('canvas');
+  const scale=.23;
+  off.width=Math.max(1,Math.floor((g.right-g.left)*scale));
+  off.height=Math.max(1,Math.floor((g.bottom-g.top)*scale));
+  const oc=off.getContext('2d'),img=oc.createImageData(off.width,off.height);
+  const idx=storedIndices();
+  for(let y=0;y<off.height;y++){
+    for(let x=0;x<off.width;x++){
+      const q={x:x/(off.width-1),y:1-y/(off.height-1)};
+      const pr=predict(q,+kEl.value,idx);
+      const p=(y*off.width+x)*4;
+      if(pr.cls===0){
+        img.data[p]=215;img.data[p+1]=168;img.data[p+2]=95;img.data[p+3]=42;
+      }else{
+        img.data[p]=184;img.data[p+1]=215;img.data[p+2]=173;img.data[p+3]=42;
+      }
+    }
+  }
+  oc.putImageData(img,0,0);
+  regionCache=off;regionKey=key;
+  return off;
+}
+function drawAllPoints(W,H,storedOnlyStrong=true){
+  const stored=new Set(storedIndices());
+  points.forEach((p,i)=>{
+    const isStored=stored.has(i);
+    const col=p.cls===0?'#d7a85f':'#b8d7ad';
+    if(isStored){
+      dot(pxX(p.x,W,H),pxY(p.y,W,H),5,col,5);
+    }else{
+      dot(pxX(p.x,W,H),pxY(p.y,W,H),3,'rgba(170,154,136,.20)');
+    }
+  });
+}
+function drawBoundaryBuild(W,H){
+  drawGrid(W,H);
+  const g=graphArea(W,H),off=regionImage(W,H);
+  ctx.save();ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(off,g.left,g.top,g.right-g.left,g.bottom-g.top);
+  ctx.restore();
+  drawAllPoints(W,H);
+
+  const newest=order[Math.max(0,storedCount-1)];
+  if(newest!==undefined){
+    const p=points[newest],x=pxX(p.x,W,H),y=pxY(p.y,W,H);
+    ring(x,y,13+Math.sin(performance.now()/160)*2,'rgba(242,201,120,.75)',2);
+    text('newly stored',x+15,y-13,'#f2c978',11,'left','600');
+  }
+
+  const pr=queryPrediction();
+  const qx=pxX(query.x,W,H),qy=pxY(query.y,W,H);
+  dot(qx,qy,10,pr.cls===0?'#f2c978':'#c8e4c0',22);
+  ring(qx,qy,16,'rgba(243,234,220,.55)',2);
+  text('query',qx+17,qy-13,'#f3eadc',11,'left','600');
+
+  box(22,20,380,105);
+  text('KNN boundary build',40,45,'#f2c978',12,'left','600');
+  text(`${storedCount} examples are currently stored`,40,72,'#f3eadc',17,'left','700');
+  text('The boundary is recomputed from stored examples — not from gradients.',40,98,'#aa9a88',12,'left');
+  text('Gray points are not stored yet.',40,119,'#aa9a88',11,'left');
+}
+
+function sortedNeighbors(){
+  return nearestFor(query,points.length,storedIndices());
+}
+function drawLiveNeighbors(W,H){
+  drawGrid(W,H);
+  const sorted=sortedNeighbors();
+  const shown=Math.min(revealed,+kEl.value,sorted.length);
+  const active=new Set(sorted.slice(0,shown).map(n=>n.i));
+  const stored=new Set(storedIndices());
+
+  points.forEach((p,i)=>{
+    const col=p.cls===0?'#d7a85f':'#b8d7ad';
+    if(stored.has(i))dot(pxX(p.x,W,H),pxY(p.y,W,H),active.has(i)?8:5,col,active.has(i)?16:4);
+    else dot(pxX(p.x,W,H),pxY(p.y,W,H),3,'rgba(170,154,136,.15)');
+  });
+
+  const qx=pxX(query.x,W,H),qy=pxY(query.y,W,H);
+  let a=0,b=0;
+  sorted.slice(0,shown).forEach((n,rank)=>{
+    const nx=pxX(n.p.x,W,H),ny=pxY(n.p.y,W,H);
+    line([qx,qy],[nx,ny],n.p.cls===0?'rgba(215,168,95,.75)':'rgba(184,215,173,.75)',2,[6,5]);
+    text(`#${rank+1}`,nx+9,ny-10,'#f3eadc',11,'left','600');
+    const wt=voteEl.value==='distance'?1/(n.d+.025):1;
+    if(n.p.cls===0)a+=wt;else b+=wt;
+  });
+
+  dot(qx,qy,11,'#9b79b8',26);
+  ring(qx,qy,18+Math.sin(performance.now()/150)*1.5,'rgba(242,201,120,.60)',2);
+  text('query',qx+18,qy-16,'#f3eadc',11,'left','600');
+
+  if(shown>0){
+    const far=sorted[shown-1];
+    const radius=Math.hypot(pxX(far.p.x,W,H)-qx,pxY(far.p.y,W,H)-qy);
+    ring(qx,qy,radius,'rgba(155,121,184,.35)',1.5);
+  }
+
+  box(22,20,390,112);
+  text('Live nearest-neighbor search',40,45,'#f2c978',12,'left','600');
+  text(`Revealed ${shown} of K=${kEl.value} nearest stored examples`,40,72,'#f3eadc',15,'left','700');
+  text(`Class A vote: ${a.toFixed(2)}    Class B vote: ${b.toFixed(2)}`,40,98,'#aa9a88',12,'left');
+  text(shown<+kEl.value?'Search continues by distance.':`Prediction → ${b>a?'Class B':'Class A'}`,
+       40,121,shown<+kEl.value?'#aa9a88':'#b8d7ad',12,'left','600');
+}
+
+function validationForK(k){
+  const oldStored=storedCount;
+  storedCount=points.length;
+  const e=validationError(k);
+  storedCount=oldStored;
+  return e??1;
+}
+function drawValidation(W,H){
+  const margin=35;
+  const leftX=margin,topY=45,leftW=W*.58,leftH=H-100;
+  box(leftX,topY,leftW,leftH);
+  text('Validation error versus K',leftX+20,topY+27,'#f2c978',13,'left','600');
+
+  const gx=leftX+60,gy=topY+60,gw=leftW-95,gh=leftH-115;
+  line([gx,gy+gh],[gx+gw,gy+gh],'rgba(243,234,220,.24)',1.2);
+  line([gx,gy],[gx,gy+gh],'rgba(243,234,220,.24)',1.2);
+
+  const ks=[1,3,5,7,9,11,13,15];
+  const errors=ks.map(validationForK);
+  const maxErr=Math.max(.25,...errors);
+  ctx.save();ctx.strokeStyle='#9b79b8';ctx.lineWidth=3;ctx.beginPath();
+  errors.forEach((e,i)=>{
+    const x=gx+i/(ks.length-1)*gw;
+    const y=gy+e/maxErr*gh;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  });
+  ctx.stroke();ctx.restore();
+
+  errors.forEach((e,i)=>{
+    const x=gx+i/(ks.length-1)*gw;
+    const y=gy+e/maxErr*gh;
+    const active=ks[i]===+kEl.value;
+    dot(x,y,active?7:4,active?'#f2c978':'#b8d7ad',active?14:5);
+    text(String(ks[i]),x,gy+gh+22,'#aa9a88',11);
+    text(`${Math.round(e*100)}%`,x,y-11,'#aa9a88',10);
+  });
+  text('K',gx+gw/2,gy+gh+43,'#aa9a88',11);
+  text('lower error is better',gx+10,gy+17,'#aa9a88',11,'left');
+
+  const rightX=leftX+leftW+18,rightW=W-rightX-margin;
+  box(rightX,topY,rightW,leftH);
+  text('Query distance graph',rightX+20,topY+27,'#f2c978',13,'left','600');
+
+  const sorted=nearestFor(query,Math.min(12,points.length),points.map((_,i)=>i));
+  const barLeft=rightX+65,barRight=rightX+rightW-25,barTop=topY+60;
+  const maxD=Math.max(.01,...sorted.map(n=>n.d));
+  sorted.forEach((n,i)=>{
+    const y=barTop+i*30;
+    const col=n.p.cls===0?'rgba(215,168,95,.75)':'rgba(184,215,173,.75)';
+    text(`#${i+1}`,barLeft-12,y+15,'#aa9a88',10,'right');
+    box(barLeft,y,barRight-barLeft,18,'rgba(243,234,220,.025)','rgba(243,234,220,.08)');
+    ctx.fillStyle=col;
+    ctx.fillRect(barLeft,y,(barRight-barLeft)*(n.d/maxD),18);
+    text(`${n.d.toFixed(3)}`,barRight,y+14,'#f3eadc',10,'right');
+  });
+}
+
+function drawTruth(W,H){
+  const margin=38;
+  const top=45;
+  const cardW=(W-margin*3)/2;
+  const cardH=(H-120)/2;
+
+  box(margin,top,cardW,cardH);
+  box(margin*2+cardW,top,cardW,cardH);
+  box(margin,top+cardH+20,cardW,cardH);
+  box(margin*2+cardW,top+cardH+20,cardW,cardH);
+
+  text('What KNN stores',margin+22,top+30,'#f2c978',14,'left','700');
+  text('Training examples',margin+22,top+62,'#f3eadc',17,'left','700');
+  text('• feature coordinates',margin+22,top+94,'#aa9a88',13,'left');
+  text('• class labels',margin+22,top+120,'#aa9a88',13,'left');
+  text('No fitted equation is produced.',margin+22,top+155,'#d98f82',12,'left','600');
+
+  const x2=margin*2+cardW;
+  text('What happens at prediction',x2+22,top+30,'#f2c978',14,'left','700');
+  text('1. Measure distances',x2+22,top+67,'#f3eadc',14,'left','600');
+  text('2. Select nearest K',x2+22,top+98,'#f3eadc',14,'left','600');
+  text('3. Vote for a class',x2+22,top+129,'#f3eadc',14,'left','600');
+  text('4. Return confidence',x2+22,top+160,'#f3eadc',14,'left','600');
+
+  const y2=top+cardH+20;
+  text('Parameters in standard KNN',margin+22,y2+30,'#f2c978',14,'left','700');
+  text('Learned weight w',margin+22,y2+72,'#aa9a88',13,'left');
+  text('N/A',margin+cardW-25,y2+72,'#d98f82',14,'right','700');
+  text('Learned bias b',margin+22,y2+107,'#aa9a88',13,'left');
+  text('N/A',margin+cardW-25,y2+107,'#d98f82',14,'right','700');
+  text('SGD / gradient descent',margin+22,y2+142,'#aa9a88',13,'left');
+  text('N/A',margin+cardW-25,y2+142,'#d98f82',14,'right','700');
+  text('Weight–bias loss surface',margin+22,y2+177,'#aa9a88',13,'left');
+  text('N/A',margin+cardW-25,y2+177,'#d98f82',14,'right','700');
+
+  text('What “weights” can mean here',x2+22,y2+30,'#f2c978',14,'left','700');
+  text('Distance-weighted voting',x2+22,y2+67,'#f3eadc',15,'left','700');
+  text('vote weight = 1 / (distance + ε)',x2+22,y2+101,'#b8d7ad',15,'left','600');
+  text('These are temporary vote strengths.',x2+22,y2+137,'#aa9a88',12,'left');
+  text('They are not trained model weights.',x2+22,y2+160,'#d98f82',12,'left','600');
+
+  // simple pipeline in center bottom
+  const py=H-52;
+  const labels=['Stored data','Distance','Nearest K','Vote','Prediction'];
+  const xs=labels.map((_,i)=>margin+60+i*(W-margin*2-120)/(labels.length-1));
+  labels.forEach((lab,i)=>{
+    dot(xs[i],py,10,i===0?'#d7a85f':i===labels.length-1?'#b8d7ad':'#9b79b8',12);
+    text(lab,xs[i],py-20,'#f3eadc',11);
+    if(i<labels.length-1)line([xs[i]+14,py],[xs[i+1]-14,py],'rgba(242,201,120,.45)',2);
+  });
+}
+
+function draw(){
+  const W=c.clientWidth,H=c.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  updateStatus();
+  if(mode==='build')drawBoundaryBuild(W,H);
+  else if(mode==='neighbors')drawLiveNeighbors(W,H);
+  else if(mode==='validation')drawValidation(W,H);
+  else drawTruth(W,H);
+  updateModeText();
+}
+function updateModeText(){
+  if(mode==='build'){
+    $('note').textContent='Boundary Build: KNN stores examples; the regions change as more examples become available.';
+    $('badge').textContent='Mode 1';
+  }else if(mode==='neighbors'){
+    $('note').textContent='Live Neighbors: measure distance, reveal nearest K, then vote.';
+    $('badge').textContent='Mode 2';
+  }else if(mode==='validation'){
+    $('note').textContent='Error & K Graph: use validation error to choose K; this is the correct KNN loss-style graph.';
+    $('badge').textContent='Mode 3';
+  }else{
+    $('note').textContent='Standard KNN has no SGD, learned weight, learned bias, or weight–bias loss surface.';
+    $('badge').textContent='Mode 4';
+  }
+}
+
+function storeNext(){
+  if(storedCount<points.length){
+    storedCount++;
+    revealed=0;
+    regionCache=null;
+  }else{
+    buildPlaying=false;
+  }
+  draw();
+}
+function revealNext(){
+  const max=Math.min(+kEl.value,storedCount);
+  if(revealed<max)revealed++;
+  else neighborPlaying=false;
+  draw();
+}
+function loop(now){
+  const dt=lastTime?now-lastTime:16;
+  lastTime=now;
+  if(!paused){
+    accum+=dt;
+    if(accum>=+speedEl.value){
+      accum=0;
+      if(buildPlaying)storeNext();
+      if(neighborPlaying)revealNext();
+    }
+  }
+  raf=requestAnimationFrame(loop);
+}
+function singleStep(){
+  if(mode==='build')storeNext();
+  else if(mode==='neighbors')revealNext();
+  else if(mode==='validation'||mode==='truth'){
+    // jump to neighbors mode and reveal
+    mode='neighbors';
+    document.querySelectorAll('#viewControl button').forEach(b=>b.classList.toggle('active',b.dataset.mode==='neighbors'));
+    revealed=0;
+    draw();
+  }
+}
+function resetBuild(){
+  storedCount=4;revealed=0;buildPlaying=false;neighborPlaying=false;paused=false;
+  regionCache=null;draw();
+}
+
+// ─── UI wiring ───
+document.querySelectorAll('#viewControl button').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('#viewControl button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  mode=btn.dataset.mode;
+  buildPlaying=false;neighborPlaying=false;paused=false;
+  revealed=0;
+  draw();
+}));
+$('playBtn').onclick=()=>{
+  if(mode==='build'){
+    if(buildPlaying&&!paused){paused=true;}
+    else{buildPlaying=true;neighborPlaying=false;paused=false;accum=0;}
+  }else if(mode==='neighbors'){
+    if(neighborPlaying&&!paused){paused=true;}
+    else{neighborPlaying=true;buildPlaying=false;paused=false;accum=0;}
+    if(revealed>=Math.min(+kEl.value,storedCount)){revealed=0;}
+  }else{
+    // switch to build mode and start
+    mode='build';
+    document.querySelectorAll('#viewControl button').forEach(b=>b.classList.toggle('active',b.dataset.mode==='build'));
+    buildPlaying=true;neighborPlaying=false;paused=false;accum=0;
+  }
+  updateStatus();draw();
+};
+$('stepBtn').onclick=singleStep;
+$('resetBtn').onclick=resetBuild;
+function openSheet(){$('sheet').classList.add('show');$('sheetBackdrop').classList.add('show');}
+function closeSheet(){$('sheet').classList.remove('show');$('sheetBackdrop').classList.remove('show');}
+$('settingsBtn').onclick=openSheet;
+$('eqField').onclick=openSheet;
+$('sheetClose').onclick=closeSheet;
+$('sheetBackdrop').onclick=closeSheet;
+$('eqApply').onclick=()=>{applyEquation();closeSheet();};
+$('eqInput').addEventListener('keypress',e=>{if(e.key==='Enter'){applyEquation();closeSheet();}});
+document.querySelectorAll('.preset').forEach(btn=>btn.onclick=()=>{$('eqInput').value=btn.dataset.eq;applyEquation();closeSheet();});
+document.querySelectorAll('#sourceToggle button').forEach(btn=>btn.onclick=()=>setDataSource(btn.dataset.source));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
+$('eqSamples').addEventListener('change',()=>{$('samplesVal').textContent=$('eqSamples').value;if(dataSource==='equation'){generateData();resetBuild();}});
+$('eqNoise').addEventListener('input',function(){$('noiseVal').textContent=Math.round(parseFloat(this.value)*100)+'%';if(dataSource==='equation'){generateData();resetBuild();}});
+[kEl].forEach(el=>el.addEventListener('input',()=>{revealed=0;regionCache=null;updateStatus();draw();}));
+[metricEl,voteEl].forEach(el=>el.addEventListener('change',()=>{revealed=0;regionCache=null;updateStatus();draw();}));
+speedEl.addEventListener('change',()=>{updateStatus();draw();});
+c.addEventListener('pointerdown',e=>{
+  if(mode==='validation'||mode==='truth')return;
+  const r=c.getBoundingClientRect(),W=c.clientWidth,H=c.clientHeight,g=graphArea(W,H);
+  const x=e.clientX-r.left,y=e.clientY-r.top;
+  if(x<g.left||x>g.right||y<g.top||y>g.bottom)return;
+  query={
+    x:clamp((x-g.left)/(g.right-g.left),0,1),
+    y:clamp((g.bottom-y)/(g.bottom-g.top),0,1)
+  };
+  revealed=0;updateStatus();draw();
+});
+
+generateData();resize();updateStatus();raf=requestAnimationFrame(loop);
+</script>
+</body>
+</html>

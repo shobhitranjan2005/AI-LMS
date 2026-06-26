@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Multi-Layer Perceptron</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --window-bg:#1e1e1e;
+    --toolbar-bg:rgba(50,50,52,0.6);
+    --sidebar-bg:rgba(38,38,40,0.6);
+    --canvas-bg:#232325;
+    --separator:rgba(255,255,255,0.08);
+    --separator-strong:rgba(255,255,255,0.12);
+    --label:#ffffff;
+    --secondary-label:#8e8e93;
+    --tertiary-label:#48484a;
+    --accent:#d7a85f;
+    --accent-bright:#f2c978;
+    --violet:#9b79b8;
+    --green:#b8d7ad;
+    --red:#d98f82;
+    --blue:#5b9dd9;
+    --traffic-red:#ff5f57;
+    --traffic-yellow:#febc2e;
+    --traffic-green:#28c840;
+  }
+  html,body{
+    height:100%;overflow:hidden;
+    background:#0a0a0a;
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    color:var(--label);
+    user-select:none;
+  }
+  .window{
+    position:absolute;
+    inset:0;
+    background:var(--window-bg);
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 0 0 1px rgba(0,0,0,0.5), 0 20px 60px rgba(0,0,0,0.5);
+    display:flex;
+    flex-direction:column;
+  }
+  .toolbar{
+    height:52px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:0 12px;
+    background:var(--toolbar-bg);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:1px solid var(--separator);
+    position:relative;
+    z-index:20;
+  }
+  .nav-back{
+    display:flex;align-items:center;gap:3px;
+    color:var(--accent-bright);text-decoration:none;
+    font-size:13px;font-weight:500;
+    padding:4px 8px 4px 4px;
+    border-radius:6px;
+    transition:background 0.15s;
+  }
+  .nav-back:hover{background:rgba(255,255,255,0.06)}
+  .nav-back svg{width:12px;height:12px}
+  .window-title{
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    color:var(--label);
+    min-width:0;
+  }
+  .toolbar-spacer{flex:1}
+  .eq-field{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:rgba(0,0,0,0.3);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:4px 10px;
+    min-width:200px;
+    cursor:text;
+    transition:border-color 0.15s;
+  }
+  .eq-field:hover{border-color:var(--separator-strong)}
+  .eq-field .eq-prefix{
+    font-size:12px;
+    color:var(--accent-bright);
+    font-family:'SF Mono',ui-monospace,monospace;
+    font-weight:500;
+  }
+  .eq-field .eq-text{
+    font-size:12px;
+    color:var(--secondary-label);
+    font-family:'SF Mono',ui-monospace,monospace;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .eq-field .eq-text.active{color:var(--label)}
+  .segmented{
+    display:flex;
+    background:rgba(0,0,0,0.3);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:1px;
+    overflow:hidden;
+  }
+  .segmented button{
+    padding:4px 12px;
+    font-size:11px;
+    font-weight:500;
+    border:none;
+    background:transparent;
+    color:var(--secondary-label);
+    cursor:pointer;
+    transition:all 0.15s;
+    font-family:inherit;
+    border-radius:5px;
+  }
+  .segmented button:hover{color:var(--label)}
+  .segmented button.active{
+    background:rgba(255,255,255,0.12);
+    color:var(--label);
+    box-shadow:0 1px 2px rgba(0,0,0,0.2);
+  }
+  .toolbar-btn{
+    width:28px;height:28px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:6px;border:none;cursor:pointer;
+    background:transparent;color:var(--secondary-label);
+    transition:all 0.15s;
+  }
+  .toolbar-btn:hover{background:rgba(255,255,255,0.08);color:var(--label)}
+  .toolbar-btn:active{background:rgba(255,255,255,0.15)}
+  .toolbar-btn svg{width:15px;height:15px}
+  .canvas-area{
+    flex:1;
+    position:relative;
+    background:var(--canvas-bg);
+    overflow:hidden;
+  }
+  #c{
+    display:block;
+    width:100%;
+    height:100%;
+  }
+  .statusbar{
+    height:24px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    padding:0 12px;
+    gap:16px;
+    background:var(--toolbar-bg);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-top:1px solid var(--separator);
+    font-size:11px;
+    color:var(--secondary-label);
+  }
+  .statusbar .status-item{display:flex;align-items:center;gap:4px;}
+  .statusbar .status-item .label{color:var(--tertiary-label)}
+  .statusbar .status-item .value{
+    color:var(--secondary-label);
+    font-family:'SF Mono',ui-monospace,monospace;
+  }
+  .statusbar .status-spacer{flex:1}
+  .statusbar .status-dot{
+    width:7px;height:7px;
+    border-radius:50%;
+    background:var(--tertiary-label);
+  }
+  .statusbar .status-dot.live{
+    background:var(--green);
+    box-shadow:0 0 6px rgba(184,215,173,0.5);
+  }
+  .statusbar .status-dot.paused{background:var(--accent-bright)}
+  .statusbar .status-dot.done{background:var(--accent)}
+  .statusbar .status-text{
+    color:var(--secondary-label);
+    font-weight:500;
+  }
+  .sheet-backdrop{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,0.3);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.25s;
+    z-index:30;
+  }
+  .sheet-backdrop.show{
+    opacity:1;
+    pointer-events:auto;
+  }
+  .sheet{
+    position:absolute;
+    top:52px;
+    left:50%;
+    transform:translateX(-50%) translateY(-20px);
+    width:560px;
+    max-width:calc(100% - 32px);
+    background:rgba(44,44,46,0.95);
+    backdrop-filter:saturate(180%) blur(40px);
+    -webkit-backdrop-filter:saturate(180%) blur(40px);
+    border:1px solid var(--separator-strong);
+    border-radius:12px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+    opacity:0;
+    pointer-events:none;
+    transition:all 0.25s cubic-bezier(0.32,0.72,0,1);
+    z-index:40;
+    overflow:hidden;
+  }
+  .sheet.show{
+    opacity:1;
+    pointer-events:auto;
+    transform:translateX(-50%) translateY(0);
+  }
+  .sheet-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 18px;
+    border-bottom:1px solid var(--separator);
+  }
+  .sheet-title{
+    font-size:13px;
+    font-weight:600;
+    color:var(--label);
+  }
+  .sheet-close{
+    width:20px;height:20px;
+    border-radius:4px;border:none;
+    background:transparent;color:var(--secondary-label);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .sheet-close:hover{background:rgba(255,255,255,0.1);color:var(--label)}
+  .sheet-close svg{width:10px;height:10px}
+  .sheet-body{
+    padding:18px;
+    max-height:60vh;
+    overflow-y:auto;
+  }
+  .sheet-section{margin-bottom:20px}
+  .sheet-section:last-child{margin-bottom:0}
+  .sheet-label{
+    font-size:11px;
+    font-weight:600;
+    color:var(--secondary-label);
+    margin-bottom:8px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  .sheet .segmented{width:100%;}
+  .sheet .segmented button{
+    flex:1;
+    padding:6px;
+    font-size:12px;
+  }
+  .sheet .eq-input{
+    display:flex;align-items:center;gap:8px;
+    background:rgba(0,0,0,0.4);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:6px 10px;
+    margin-bottom:10px;
+    transition:border-color 0.15s;
+  }
+  .sheet .eq-input:focus-within{border-color:var(--accent)}
+  .sheet .eq-input .prefix{
+    font-size:13px;font-weight:500;color:var(--accent-bright);
+    font-family:'SF Mono',monospace;
+  }
+  .sheet .eq-input input{
+    flex:1;background:none;border:none;outline:none;
+    font-size:13px;color:var(--label);
+    font-family:'SF Mono',monospace;
+  }
+  .preset-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(70px,1fr));
+    gap:4px;
+    margin-bottom:10px;
+  }
+  .preset{
+    padding:5px;border-radius:5px;
+    font-size:10px;font-family:'SF Mono',monospace;
+    background:rgba(0,0,0,0.3);
+    border:1px solid var(--separator);
+    color:var(--secondary-label);cursor:pointer;
+    transition:all 0.15s;text-align:center;
+  }
+  .preset:hover{
+    background:rgba(215,168,95,0.1);color:var(--accent-bright);
+    border-color:rgba(215,168,95,0.3);
+  }
+  .control-row{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:4px;
+  }
+  .control-row .name{font-size:12px;color:var(--secondary-label)}
+  .control-row .value{
+    font-size:12px;font-weight:500;color:var(--label);
+    font-family:'SF Mono',monospace;
+  }
+  input[type=range]{
+    width:100%;height:4px;
+    -webkit-appearance:none;appearance:none;
+    background:rgba(255,255,255,0.1);
+    border-radius:2px;outline:none;
+    margin-bottom:12px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:14px;height:14px;
+    border-radius:50%;
+    background:#fff;
+    cursor:pointer;
+    box-shadow:0 1px 3px rgba(0,0,0,0.3);
+  }
+  input[type=number]{
+    width:100%;
+    background:rgba(0,0,0,0.4);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:5px 8px;
+    font-size:12px;color:var(--label);
+    font-family:monospace;
+    margin-bottom:10px;outline:none;
+  }
+  select{
+    width:100%;
+    background:rgba(0,0,0,0.4);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:5px 24px 5px 8px;
+    font-size:12px;color:var(--label);
+    cursor:pointer;outline:none;appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238e8e93' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 6px center;
+  }
+  .eq-status{
+    font-size:11px;
+    font-family:'SF Mono',monospace;
+    padding:6px 8px;
+    border-radius:5px;
+    margin-bottom:8px;
+    word-break:break-all;
+  }
+  .eq-status.ok{background:rgba(184,215,173,0.08);color:var(--green)}
+  .eq-status.error{background:rgba(217,143,130,0.08);color:var(--red)}
+  .eq-status.inactive{background:rgba(255,255,255,0.04);color:var(--tertiary-label)}
+  .btn-primary{
+    width:100%;
+    background:var(--accent);
+    color:#1a1209;font-weight:600;
+    border:none;border-radius:6px;
+    padding:8px;font-size:13px;
+    cursor:pointer;transition:all 0.15s;
+    font-family:inherit;
+  }
+  .btn-primary:hover{background:var(--accent-bright)}
+  .btn-primary:active{transform:scale(0.98)}
+  .hint{
+    font-size:11px;color:var(--tertiary-label);
+    line-height:1.4;margin-top:6px;
+  }
+  .eq-section.disabled{
+    opacity:0.4;
+    pointer-events:none;
+  }
+  .layer-control.hidden{display:none}
+  .compat{display:none}
+  @media(max-width:700px){
+    .eq-field{display:none}
+    .window-title{font-size:12px}
+  }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="emergence-theme.css">
+</head>
+<body>
+
+<div class="window">
+
+  <div class="toolbar">
+    <a href="index.html" class="nav-back" title="Back to ML Lab">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M10 3L5 8l5 5V3z"/></svg>
+      <span>ML Lab</span>
+    </a>
+    <div class="window-title">Multi-Layer Perceptron</div>
+
+    <div class="eq-field" id="eqField" title="Click to customize">
+      <span class="eq-prefix">y =</span>
+      <span class="eq-text" id="eqDisplay">0.72·sin(1.55πx) + 0.22x (built-in)</span>
+    </div>
+
+    <div class="toolbar-spacer"></div>
+
+    <div class="segmented" id="viewControl">
+      <button class="active" data-mode="training">Training</button>
+      <button data-mode="backprop">Backprop</button>
+      <button data-mode="architecture">Arch</button>
+      <button data-mode="surface">Surface</button>
+      <button data-mode="metrics">Metrics</button>
+    </div>
+
+    <button class="toolbar-btn" id="playBtn" title="Play">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l9 5-9 5V3z"/></svg>
+    </button>
+    <button class="toolbar-btn" id="stepBtn" title="Step">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l7 5-7 5V3zm9 0h2v10h-2z"/></svg>
+    </button>
+    <button class="toolbar-btn" id="resetBtn" title="Reset">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 3a5 5 0 100 10 5 5 0 000-10zm0-2L5 4l3 3V1z"/></svg>
+    </button>
+
+    <button class="toolbar-btn" id="settingsBtn" title="Customize">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 6a2 2 0 100 4 2 2 0 000-4zm0-4l1 2h2l-1.5 1.5L11 8l-2-1-1-2-1 2-2 1 1.5-1.5L5 4h2l1-2z"/></svg>
+    </button>
+  </div>
+
+  <div class="canvas-area">
+    <canvas id="c"></canvas>
+  </div>
+
+  <div class="statusbar">
+    <div class="status-item">
+      <span class="label">Arch:</span>
+      <span class="value" id="sModel">2 → 6 → 1</span>
+    </div>
+    <div class="status-item">
+      <span class="label">Epoch:</span>
+      <span class="value" id="sEpoch">0/5</span>
+    </div>
+    <div class="status-item">
+      <span class="label">Loss:</span>
+      <span class="value" id="sLoss">—</span>
+    </div>
+    <div class="status-item">
+      <span class="label" id="sScoreLabel">Acc:</span>
+      <span class="value" id="sAcc">—</span>
+    </div>
+    <div class="status-spacer"></div>
+    <div class="status-dot" id="sDot"></div>
+    <span class="status-text" id="sStatus">Idle</span>
+  </div>
+
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="sheet" id="sheet">
+    <div class="sheet-header">
+      <div class="sheet-title">Customize</div>
+      <button class="sheet-close" id="sheetClose">
+        <svg viewBox="0 0 12 12" fill="currentColor"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+
+      <div class="sheet-section">
+        <div class="sheet-label">Data Source</div>
+        <div class="segmented" id="sourceToggle">
+          <button class="active" data-source="original">Built-in data</button>
+          <button data-source="equation">Equation-driven</button>
+        </div>
+        <div class="hint">Equation-driven mode auto-switches the task to regression and fits the network to y = equation(x).</div>
+      </div>
+
+      <div class="sheet-section eq-section disabled" id="eqSection">
+        <div class="sheet-label">Equation — y = equation(x), regression only</div>
+        <div class="eq-input">
+          <span class="prefix">y =</span>
+          <input id="eqInput" type="text" placeholder="sin(3*x)" value="sin(3*x)">
+        </div>
+        <div class="preset-grid">
+          <button class="preset" data-eq="sin(3*x)">sin(3x)</button>
+          <button class="preset" data-eq="sin(pi*x)">sin(πx)</button>
+          <button class="preset" data-eq="x^3 - x">x³−x</button>
+          <button class="preset" data-eq="abs(x) - 0.5">|x|−.5</button>
+          <button class="preset" data-eq="tanh(3*x)">tanh(3x)</button>
+          <button class="preset" data-eq="cos(2*x) + 0.5*x">cos2x+.5x</button>
+          <button class="preset" data-eq="exp(-x^2)">e^(−x²)</button>
+          <button class="preset" data-eq="sin(x)*cos(2*x)">sin·cos2</button>
+          <button class="preset" data-eq="x*sin(5*x)">x·sin5x</button>
+        </div>
+        <div class="control-row">
+          <span class="name">Samples</span>
+          <span class="value" id="samplesVal">120</span>
+        </div>
+        <input type="number" id="eqSamples" min="20" max="500" value="120" step="10">
+        <div class="control-row">
+          <span class="name">Noise</span>
+          <span class="value" id="noiseVal">5%</span>
+        </div>
+        <input type="range" id="eqNoise" min="0" max="0.3" step="0.01" value="0.05">
+        <div class="eq-status inactive" id="eqStatus">Inactive — switch to Equation-driven</div>
+        <button class="btn-primary" id="eqApply">Generate from equation</button>
+        <div class="hint">A multi-layer network with non-linear activation can fit any continuous function. Try sine, polynomials, or absolute values.</div>
+      </div>
+
+      <div class="sheet-section">
+        <div class="sheet-label">Task</div>
+        <div class="segmented" id="taskSegmented">
+          <button class="active" data-task="classification">Classification</button>
+          <button data-task="regression">Regression</button>
+        </div>
+        <input type="hidden" id="task" value="classification">
+      </div>
+
+      <div class="sheet-section">
+        <div class="sheet-label">Architecture</div>
+        <div class="control-row">
+          <span class="name">Hidden Layers</span>
+          <span class="value" id="hiddenVal">2</span>
+        </div>
+        <input type="range" id="hiddenCount" min="1" max="4" step="1" value="2">
+        <div class="layer-control" id="layerControl0">
+          <div class="control-row">
+            <span class="name">Layer 1 neurons</span>
+            <span class="value" id="layerVal0">6</span>
+          </div>
+          <input type="range" class="layerRange" id="layerRange0" min="2" max="10" step="1" value="6">
+        </div>
+        <div class="layer-control" id="layerControl1">
+          <div class="control-row">
+            <span class="name">Layer 2 neurons</span>
+            <span class="value" id="layerVal1">5</span>
+          </div>
+          <input type="range" class="layerRange" id="layerRange1" min="2" max="10" step="1" value="5">
+        </div>
+        <div class="layer-control hidden" id="layerControl2">
+          <div class="control-row">
+            <span class="name">Layer 3 neurons</span>
+            <span class="value" id="layerVal2">4</span>
+          </div>
+          <input type="range" class="layerRange" id="layerRange2" min="2" max="10" step="1" value="4">
+        </div>
+        <div class="layer-control hidden" id="layerControl3">
+          <div class="control-row">
+            <span class="name">Layer 4 neurons</span>
+            <span class="value" id="layerVal3">3</span>
+          </div>
+          <input type="range" class="layerRange" id="layerRange3" min="2" max="10" step="1" value="3">
+        </div>
+        <div class="control-row">
+          <span class="name">Hidden Activation</span>
+          <span class="value" id="activationVal">ReLU</span>
+        </div>
+        <select id="activation">
+          <option value="relu" selected>ReLU</option>
+          <option value="tanh">Tanh</option>
+          <option value="sigmoid">Sigmoid</option>
+        </select>
+      </div>
+
+      <div class="sheet-section">
+        <div class="sheet-label">Surface Tracking (for Surface mode)</div>
+        <div class="control-row">
+          <span class="name">Track Layer</span>
+          <span class="value" id="trackLayerVal">1</span>
+        </div>
+        <select id="trackLayer"><option value="1">Hidden layer 1</option></select>
+        <div class="control-row">
+          <span class="name">Track Neuron</span>
+          <span class="value" id="trackNeuronVal">1</span>
+        </div>
+        <select id="trackNeuron"><option value="1">Neuron 1</option></select>
+      </div>
+
+      <div class="sheet-section">
+        <div class="sheet-label">Training</div>
+        <div class="control-row">
+          <span class="name">Learning Rate</span>
+          <span class="value" id="lrVal">0.050</span>
+        </div>
+        <input type="range" id="lr" min="0.005" max="0.2" step="0.005" value="0.05">
+        <div class="control-row">
+          <span class="name">Epochs</span>
+          <span class="value" id="epochsVal">5</span>
+        </div>
+        <input type="range" id="epochs" min="1" max="20" step="1" value="5">
+        <div class="control-row">
+          <span class="name">Speed</span>
+          <span class="value" id="speedVal">Slow</span>
+        </div>
+        <select id="speed">
+          <option value="1200">Very slow</option>
+          <option value="800" selected>Slow</option>
+          <option value="450">Normal</option>
+          <option value="220">Fast</option>
+          <option value="2.2">Ultra Fast (100×)</option>
+        </select>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="compat" id="note"></div>
+<div class="compat" id="badge"></div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const c=$('c'),ctx=c.getContext('2d');
+const canvas=c;
+const taskEl=$('task'),hiddenEl=$('hiddenCount'),activationEl=$('activation');
+const lrEl=$('lr'),epochsEl=$('epochs'),speedEl=$('speed');
+const trackLayerEl=$('trackLayer'),trackNeuronEl=$('trackNeuron');
+const layerRanges=[...document.querySelectorAll('.layerRange')];
+
+let mode='training';
+let hiddenSizes=[6,5,4,3];
+let sizes=[];
+let W=[],B=[];
+let data=[];
+let order=[],cursor=0,epoch=0,activeIndex=-1;
+let playing=false,paused=false,lastTime=0;
+let phase='idle',phaseT=0;
+let activeCache=null,activeGrads=null,activeLoss=0;
+let lossHistory=[],scoreHistory=[];
+let regionCache=null,regionDirty=true;
+let surfaceCache=null,surfaceDirty=true,lastSurfaceBuild=0;
+let updateCount=0;
+let rotX=-0.56,rotY=0.74,surfaceZoom=1.0,drag=false,lastPX=0,lastPY=0;
+let raf=null;
+
+let currentEq=null,currentEqStr='sin(3*x)';
+let dataSource='original';
+function parseEquation(input){
+  let expr=(input||'').trim().toLowerCase();
+  if(!expr)return null;
+  expr=expr.replace(/^y\s*=\s*/,'');expr=expr.replace(/\^/g,'**');expr=expr.replace(/(\d)\s*x/g,'$1*x');
+  ['sin','cos','tan','exp','log','sqrt','abs','sinh','cosh','tanh','atan','asin','acos','floor','ceil','sign'].forEach(fn=>{expr=expr.replace(new RegExp('\\b'+fn+'\\b','g'),'Math.'+fn);});
+  expr=expr.replace(/\bpi\b/g,'Math.PI');expr=expr.replace(/\be(?!xp)/g,'Math.E');
+  try{const fn=new Function('x','return '+expr);const test=fn(0.5);if(typeof test!=='number'||!isFinite(test))return null;return fn;}catch(e){return null;}
+}
+function applyEquation(){
+  const input=$('eqInput').value;const fn=parseEquation(input);const status=$('eqStatus');
+  if(fn){currentEq=fn;currentEqStr=input.trim();status.textContent='Active: y = '+currentEqStr;status.className='eq-status ok';updateEqDisplay();generateData();resetTraining(true);}
+  else{status.textContent='Error: cannot parse "'+input+'"';status.className='eq-status error';}
+}
+function updateEqDisplay(){
+  const disp=$('eqDisplay');
+  if(dataSource==='equation'&&currentEq){disp.textContent=currentEqStr;disp.classList.add('active');}
+  else{disp.textContent='0.72·sin(1.55πx) + 0.22x (built-in)';disp.classList.remove('active');}
+}
+function setDataSource(source){
+  dataSource=source;
+  document.querySelectorAll('#sourceToggle button').forEach(btn=>btn.classList.toggle('active',btn.dataset.source===source));
+  const eqSection=$('eqSection');
+  if(source==='equation'){
+    eqSection.classList.remove('disabled');
+    // Auto-switch to regression task
+    if(taskEl.value!=='regression'){
+      taskEl.value='regression';
+      document.querySelectorAll('#taskSegmented button').forEach(b=>b.classList.toggle('active',b.dataset.task==='regression'));
+    }
+    applyEquation();
+  }else{
+    eqSection.classList.add('disabled');
+    $('eqStatus').textContent='Inactive — switch to Equation-driven';
+    $('eqStatus').className='eq-status inactive';
+    updateEqDisplay();
+    generateData();resetTraining(true);
+  }
+}
+function getEqSamples(){return parseInt($('eqSamples')?.value)||120;}
+function getEqNoise(){const v=parseFloat($('eqNoise')?.value);return isNaN(v)?0.05:v;}
+function computeEqYRange(){
+  if(!currentEq)return [-1,1];
+  let lo=Infinity,hi=-Infinity;
+  for(let i=0;i<=50;i++){const x=-1+2*i/50;try{const y=currentEq(x);if(isFinite(y)){lo=Math.min(lo,y);hi=Math.max(hi,y);}}catch(e){}}
+  if(!isFinite(lo)||!isFinite(hi))return [-1,1];
+  return [lo,hi];
+}
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function map(v,a,b,c,d){return c+(v-a)*(d-c)/(b-a)}
+function ease(t){return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2}
+function randn(){
+  let u=0,v=0;
+  while(u===0)u=Math.random();
+  while(v===0)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function sigmoid(x){
+  if(x>=0){const e=Math.exp(-x);return 1/(1+e)}
+  const e=Math.exp(x);return e/(1+e);
+}
+function hiddenAct(x){
+  if(activationEl.value==='relu')return Math.max(0,x);
+  if(activationEl.value==='sigmoid')return sigmoid(x);
+  return Math.tanh(x);
+}
+function hiddenDeriv(z){
+  if(activationEl.value==='relu')return z>0?1:0;
+  if(activationEl.value==='sigmoid'){
+    const s=sigmoid(z);return s*(1-s);
+  }
+  const t=Math.tanh(z);return 1-t*t;
+}
+function outputAct(x){
+  return taskEl.value==='classification'?sigmoid(x):x;
+}
+function inputCount(){return taskEl.value==='classification'?2:1}
+function buildSizes(){
+  sizes=[inputCount(),...hiddenSizes.slice(0,+hiddenEl.value),1];
+}
+function parameterCount(){
+  let n=0;
+  for(let l=0;l<W.length;l++)n+=W[l].length*W[l][0].length+B[l].length;
+  return n;
+}
+function initNetwork(){
+  buildSizes();
+  W=[];B=[];
+  for(let l=0;l<sizes.length-1;l++){
+    const fanIn=sizes[l],fanOut=sizes[l+1];
+    const scale=Math.sqrt(2/(fanIn+fanOut));
+    const matrix=[];
+    for(let j=0;j<fanOut;j++){
+      const row=[];
+      for(let i=0;i<fanIn;i++)row.push(randn()*scale);
+      matrix.push(row);
+    }
+    W.push(matrix);
+    B.push(Array(fanOut).fill(0));
+  }
+  updateTrackingControls();
+}
+function generateData(){
+  data=[];
+  if(taskEl.value==='classification'){
+    const clusters=[
+      {x:.25,y:.25,t:0},{x:.75,y:.75,t:0},
+      {x:.25,y:.75,t:1},{x:.75,y:.25,t:1}
+    ];
+    clusters.forEach(c=>{
+      for(let i=0;i<20;i++){
+        data.push({
+          input:[clamp(c.x+randn()*.095,.03,.97),clamp(c.y+randn()*.095,.03,.97)],
+          target:c.t
+        });
+      }
+    });
+  }else{
+    if(dataSource==='equation'&&currentEq){
+      const N=getEqSamples();const noiseFraction=getEqNoise();
+      const [yLo,yHi]=computeEqYRange();
+      const yRange=Math.max(0.1,yHi-yLo);
+      const noiseSigma=noiseFraction*yRange;
+      for(let i=0;i<N;i++){
+        const x=-1+2*Math.random();
+        try{
+          const y=currentEq(x)+randn()*noiseSigma;
+          if(isFinite(y))data.push({input:[x],target:y});
+        }catch(e){}
+      }
+    }else{
+      for(let i=0;i<80;i++){
+        const x=-1+2*i/79;
+        const target=.72*Math.sin(1.55*Math.PI*x)+.22*x+randn()*.065;
+        data.push({input:[x],target});
+      }
+    }
+  }
+}
+function shuffle(){
+  order=[...Array(data.length).keys()];
+  for(let i=order.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [order[i],order[j]]=[order[j],order[i]];
+  }
+}
+function forward(input){
+  const acts=[input.slice()],zs=[];
+  let a=input.slice();
+  for(let l=0;l<W.length;l++){
+    const z=[];
+    for(let j=0;j<W[l].length;j++){
+      let sum=B[l][j];
+      for(let i=0;i<W[l][j].length;i++)sum+=W[l][j][i]*a[i];
+      z.push(sum);
+    }
+    zs.push(z);
+    const last=l===W.length-1;
+    a=z.map(v=>last?outputAct(v):hiddenAct(v));
+    acts.push(a);
+  }
+  return {acts,zs,output:a[0]};
+}
+function sampleLoss(output,target){
+  if(taskEl.value==='classification'){
+    const p=clamp(output,1e-7,1-1e-7);
+    return -(target*Math.log(p)+(1-target)*Math.log(1-p));
+  }
+  const e=output-target;
+  return .5*e*e;
+}
+function backward(sample,cache){
+  const dW=W.map(layer=>layer.map(row=>row.map(()=>0)));
+  const dB=B.map(layer=>layer.map(()=>0));
+  let delta=[cache.output-sample.target];
+
+  for(let l=W.length-1;l>=0;l--){
+    const prevA=cache.acts[l];
+    for(let j=0;j<delta.length;j++){
+      dB[l][j]=delta[j];
+      for(let i=0;i<prevA.length;i++)dW[l][j][i]=delta[j]*prevA[i];
+    }
+    if(l>0){
+      const nextDelta=[];
+      for(let i=0;i<sizes[l];i++){
+        let sum=0;
+        for(let j=0;j<delta.length;j++)sum+=W[l][j][i]*delta[j];
+        nextDelta.push(sum*hiddenDeriv(cache.zs[l-1][i]));
+      }
+      delta=nextDelta;
+    }
+  }
+  return {dW,dB};
+}
+function applyGrads(grads){
+  const lr=+lrEl.value;
+  for(let l=0;l<W.length;l++){
+    for(let j=0;j<W[l].length;j++){
+      B[l][j]-=lr*grads.dB[l][j];
+      for(let i=0;i<W[l][j].length;i++)W[l][j][i]-=lr*grads.dW[l][j][i];
+    }
+  }
+  updateCount++;
+  regionDirty=true;
+  surfaceDirty=true;
+}
+function datasetLoss(){
+  let s=0;
+  for(const sample of data){
+    const out=forward(sample.input).output;
+    s+=sampleLoss(out,sample.target);
+  }
+  return s/data.length;
+}
+function datasetScore(){
+  if(taskEl.value==='classification'){
+    let ok=0;
+    for(const sample of data){
+      if((forward(sample.input).output>=.5?1:0)===sample.target)ok++;
+    }
+    return ok/data.length;
+  }
+  let s=0;
+  for(const sample of data){
+    const e=forward(sample.input).output-sample.target;
+    s+=e*e;
+  }
+  return Math.sqrt(s/data.length);
+}
+function recordMetrics(){
+  lossHistory.push(datasetLoss());
+  scoreHistory.push(datasetScore());
+  if(lossHistory.length>180){lossHistory.shift();scoreHistory.shift()}
+}
+function resetTraining(reinit=true){
+  if(reinit)initNetwork();
+  epoch=0;cursor=0;activeIndex=-1;
+  phase='idle';phaseT=0;playing=false;paused=false;
+  activeCache=null;activeGrads=null;activeLoss=0;
+  lossHistory=[];scoreHistory=[];
+  shuffle();recordMetrics();
+  regionDirty=true;surfaceDirty=true;surfaceCache=null;
+  updateStatus();draw();
+}
+function beginSample(){
+  if(epoch>=+epochsEl.value){
+    playing=false;phase='done';activeIndex=-1;updateStatus();draw();return false;
+  }
+  if(cursor>=order.length){
+    cursor=0;epoch++;shuffle();recordMetrics();
+    if(epoch>=+epochsEl.value){
+      playing=false;phase='done';activeIndex=-1;updateStatus();draw();return false;
+    }
+  }
+  activeIndex=order[cursor++];
+  activeCache=forward(data[activeIndex].input);
+  activeLoss=sampleLoss(activeCache.output,data[activeIndex].target);
+  activeGrads=backward(data[activeIndex],activeCache);
+  phase='forward';phaseT=0;
+  return true;
+}
+function finishCurrentStep(){
+  if(activeIndex<0)return;
+  applyGrads(activeGrads);
+  phase='hold';phaseT=0;
+  updateStatus();
+}
+function oneCompleteStep(){
+  if(phase==='done')resetTraining(false);
+  if(!beginSample())return;
+  finishCurrentStep();
+  draw();
+}
+function updateTrackingControls(){
+  const oldLayer=+trackLayerEl.value||1;
+  trackLayerEl.innerHTML='';
+  for(let i=0;i<+hiddenEl.value;i++){
+    const op=document.createElement('option');
+    op.value=String(i+1);op.textContent=`Hidden layer ${i+1}`;
+    trackLayerEl.appendChild(op);
+  }
+  trackLayerEl.value=String(clamp(oldLayer,1,+hiddenEl.value));
+  updateTrackedNeurons();
+}
+function updateTrackedNeurons(){
+  const layerIndex=Math.max(0,(+trackLayerEl.value||1)-1);
+  const oldNeuron=+trackNeuronEl.value||1;
+  trackNeuronEl.innerHTML='';
+  const count=hiddenSizes[layerIndex];
+  for(let i=0;i<count;i++){
+    const op=document.createElement('option');
+    op.value=String(i+1);op.textContent=`Neuron ${i+1}`;
+    trackNeuronEl.appendChild(op);
+  }
+  trackNeuronEl.value=String(clamp(oldNeuron,1,count));
+  $('trackLayerVal').textContent=trackLayerEl.value||'1';
+  $('trackNeuronVal').textContent=trackNeuronEl.value||'1';
+  surfaceDirty=true;
+}
+function trackedRef(){
+  const layer=Math.max(0,(+trackLayerEl.value||1)-1);
+  const neuron=Math.max(0,(+trackNeuronEl.value||1)-1);
+  return {layer,neuron,input:0};
+}
+function updateLayerVisibility(){
+  const count=+hiddenEl.value;
+  $('hiddenVal').textContent=count;
+  for(let i=0;i<4;i++){
+    $(`layerControl${i}`).classList.toggle('hidden',i>=count);
+    $(`layerVal${i}`).textContent=hiddenSizes[i];
+  }
+}
+function updateStatus(){
+  $('activationVal').textContent=activationEl.selectedOptions[0].text;
+  $('lrVal').textContent=(+lrEl.value).toFixed(3);
+  $('epochsVal').textContent=epochsEl.value;
+  $('speedVal').textContent=speedEl.selectedOptions[0].text;
+  $('samplesVal').textContent=$('eqSamples').value;
+  $('noiseVal').textContent=Math.round(parseFloat($('eqNoise').value)*100)+'%';
+  const archStr=`${sizes[0]||inputCount()} → ${hiddenSizes.slice(0,+hiddenEl.value).join(' → ')} → 1`;
+  $('sModel').textContent=archStr;
+  $('sEpoch').textContent=`${epoch}/${epochsEl.value}`;
+  $('sLoss').textContent=datasetLoss().toFixed(3);
+  if(taskEl.value==='classification'){
+    $('sScoreLabel').textContent='Acc:';
+    $('sAcc').textContent=`${Math.round(datasetScore()*100)}%`;
+  }else{
+    $('sScoreLabel').textContent='RMSE:';
+    $('sAcc').textContent=datasetScore().toFixed(3);
+  }
+  updateLayerVisibility();
+  $('trackLayerVal').textContent=trackLayerEl.value||'1';
+  $('trackNeuronVal').textContent=trackNeuronEl.value||'1';
+  // Reflect task in segmented
+  document.querySelectorAll('#taskSegmented button').forEach(b=>b.classList.toggle('active',b.dataset.task===taskEl.value));
+  const dot=$('sDot'),txt=$('sStatus'),playBtn=$('playBtn');
+  if(playing&&!paused){
+    dot.className='status-dot live';txt.textContent='Training';
+    playBtn.innerHTML='<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3h3v10H4zm5 0h3v10H9z"/></svg>';
+  }else{
+    dot.className=phase==='done'?'status-dot done':(paused?'status-dot paused':'status-dot');
+    txt.textContent=phase==='done'?'Complete':(paused?'Paused':'Idle');
+    playBtn.innerHTML='<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l9 5-9 5V3z"/></svg>';
+  }
+}
+function resize(){
+  const r=canvas.getBoundingClientRect(),d=devicePixelRatio||1;
+  canvas.width=Math.max(1,Math.floor(r.width*d));
+  canvas.height=Math.max(1,Math.floor(r.height*d));
+  ctx.setTransform(d,0,0,d,0,0);
+  regionDirty=true;surfaceDirty=true;
+  draw();
+}
+addEventListener('resize',resize);
+
+function text(t,x,y,color='#f3eadc',size=12,align='center',weight='400'){
+  ctx.save();ctx.fillStyle=color;ctx.font=`${weight} ${size}px system-ui`;ctx.textAlign=align;ctx.fillText(t,x,y);ctx.restore();
+}
+function line(a,b,color='rgba(215,168,95,.25)',width=2,dash=[]){
+  if(!a||!b||![...a,...b].every(Number.isFinite))return;
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);
+  ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();ctx.restore();
+}
+function dot(x,y,r,color,blur=0){
+  if(!Number.isFinite(x)||!Number.isFinite(y))return;
+  ctx.save();ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=blur;
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.restore();
+}
+function ring(x,y,r,color,width=2){
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke();ctx.restore();
+}
+function box(x,y,w,h,fill='rgba(15,12,9,.80)',stroke='rgba(215,168,95,.18)'){
+  ctx.save();ctx.fillStyle=fill;ctx.strokeStyle=stroke;
+  ctx.beginPath();ctx.roundRect(x,y,w,h,12);ctx.fill();ctx.stroke();ctx.restore();
+}
+function arrow(a,b,color,alpha=1){
+  if(!a||!b||![...a,...b].every(Number.isFinite))return;
+  ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2.2;
+  ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
+  const ang=Math.atan2(b[1]-a[1],b[0]-a[0]);
+  ctx.beginPath();ctx.moveTo(b[0],b[1]);
+  ctx.lineTo(b[0]-9*Math.cos(ang-.4),b[1]-9*Math.sin(ang-.4));
+  ctx.lineTo(b[0]-9*Math.cos(ang+.4),b[1]-9*Math.sin(ang+.4));
+  ctx.closePath();ctx.fill();ctx.restore();
+}
+function graphArea(Wd,Hd,pad=0){return {left:72,right:Wd-50-pad,top:55,bottom:Hd-72}}
+function pxX(x,Wd,Hd,pad=0){const g=graphArea(Wd,Hd,pad);return g.left+x*(g.right-g.left)}
+function pxY(y,Wd,Hd,pad=0){const g=graphArea(Wd,Hd,pad);return g.bottom-y*(g.bottom-g.top)}
+function drawGrid(Wd,Hd,pad=0){
+  const g=graphArea(Wd,Hd,pad);
+  ctx.save();ctx.strokeStyle='rgba(215,168,95,.05)';
+  for(let i=0;i<=10;i++){
+    const x=g.left+i/10*(g.right-g.left),y=g.top+i/10*(g.bottom-g.top);
+    ctx.beginPath();ctx.moveTo(x,g.top);ctx.lineTo(x,g.bottom);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(g.left,y);ctx.lineTo(g.right,y);ctx.stroke();
+  }
+  ctx.restore();
+  line([g.left,g.bottom],[g.right,g.bottom],'rgba(243,234,220,.28)',1.2);
+  line([g.left,g.top],[g.left,g.bottom],'rgba(243,234,220,.28)',1.2);
+}
+
+function buildRegionCache(Wd,Hd){
+  const g=graphArea(Wd,Hd),off=document.createElement('canvas');
+  off.width=Math.max(36,Math.floor((g.right-g.left)*.12));
+  off.height=Math.max(28,Math.floor((g.bottom-g.top)*.12));
+  const oc=off.getContext('2d'),img=oc.createImageData(off.width,off.height);
+  for(let y=0;y<off.height;y++)for(let x=0;x<off.width;x++){
+    const qx=x/(off.width-1),qy=1-y/(off.height-1);
+    const p=forward([qx,qy]).output,i=(y*off.width+x)*4;
+    if(p<.5){img.data[i]=215;img.data[i+1]=168;img.data[i+2]=95}
+    else{img.data[i]=184;img.data[i+1]=215;img.data[i+2]=173}
+    img.data[i+3]=Math.round(18+35*Math.abs(p-.5)*2);
+  }
+  oc.putImageData(img,0,0);
+  regionCache=off;regionDirty=false;
+}
+function drawClassificationGraph(Wd,Hd){
+  drawGrid(Wd,Hd);
+  const g=graphArea(Wd,Hd);
+  if(regionDirty||!regionCache)buildRegionCache(Wd,Hd);
+  ctx.save();ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(regionCache,g.left,g.top,g.right-g.left,g.bottom-g.top);
+  ctx.restore();
+
+  data.forEach((s,i)=>{
+    const col=s.target===0?'#d7a85f':'#b8d7ad';
+    const x=pxX(s.input[0],Wd,Hd),y=pxY(s.input[1],Wd,Hd);
+    dot(x,y,i===activeIndex?9:5,i===activeIndex?'#f2c978':col,i===activeIndex?22:4);
+  });
+
+  box(22,20,420,105);
+  text('MLP classification surface',40,45,'#f2c978',12,'left','700');
+  text(`${hiddenEl.value} hidden layers: ${hiddenSizes.slice(0,+hiddenEl.value).join(' → ')} neurons`,40,73,'#f3eadc',16,'left','600');
+  text('The curved colour boundary is produced by all network weights and biases.',40,100,'#aa9a88',12,'left');
+  text('Gold points = class 0; green points = class 1.',40,122,'#aa9a88',11,'left');
+}
+function drawRegressionGraph(Wd,Hd){
+  const g=graphArea(Wd,Hd);
+  ctx.save();ctx.strokeStyle='rgba(215,168,95,.05)';
+  for(let i=0;i<=10;i++){
+    const x=g.left+i/10*(g.right-g.left),y=g.top+i/10*(g.bottom-g.top);
+    ctx.beginPath();ctx.moveTo(x,g.top);ctx.lineTo(x,g.bottom);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(g.left,y);ctx.lineTo(g.right,y);ctx.stroke();
+  }
+  ctx.restore();
+  line([g.left,g.bottom],[g.right,g.bottom],'rgba(243,234,220,.28)',1.2);
+  line([g.left,g.top],[g.left,g.bottom],'rgba(243,234,220,.28)',1.2);
+
+  const xMap=x=>map(x,-1,1,g.left,g.right);
+  const yMap=y=>map(y,-1.2,1.2,g.bottom,g.top);
+  data.forEach((s,i)=>dot(xMap(s.input[0]),yMap(s.target),i===activeIndex?8:4,i===activeIndex?'#f2c978':'rgba(243,234,220,.48)',i===activeIndex?20:2));
+
+  ctx.save();ctx.strokeStyle='#9b79b8';ctx.lineWidth=4;ctx.beginPath();
+  for(let i=0;i<=180;i++){
+    const x=-1+2*i/180,y=forward([x]).output,px=xMap(x),py=yMap(y);
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  }
+  ctx.stroke();ctx.restore();
+
+  ctx.save();ctx.strokeStyle='#d7a85f';ctx.lineWidth=2.5;ctx.setLineDash([8,6]);ctx.beginPath();
+  if(dataSource==='equation'&&currentEq){
+    for(let i=0;i<=180;i++){
+      const x=-1+2*i/180;
+      try{const y=currentEq(x);if(!isFinite(y))continue;
+      const px=xMap(x),py=yMap(y);
+      if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);}catch(e){}
+    }
+  }else{
+    for(let i=0;i<=180;i++){
+      const x=-1+2*i/180,y=.72*Math.sin(1.55*Math.PI*x)+.22*x,px=xMap(x),py=yMap(y);
+      if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+  }
+  ctx.stroke();ctx.restore();
+
+  box(22,20,420,105);
+  text('MLP function regression',40,45,'#f2c978',12,'left','700');
+  text(`${hiddenEl.value} hidden layers: ${hiddenSizes.slice(0,+hiddenEl.value).join(' → ')} neurons`,40,73,'#f3eadc',16,'left','600');
+  text('Purple = network prediction; dashed gold = target function.',40,100,'#aa9a88',12,'left');
+  text('The network learns a non-linear curve through backpropagation.',40,122,'#aa9a88',11,'left');
+}
+function drawTrainingMode(Wd,Hd){
+  if(taskEl.value==='classification')drawClassificationGraph(Wd,Hd);
+  else drawRegressionGraph(Wd,Hd);
+}
+
+function networkLayout(x,y,w,h){
+  const cols=sizes.length,positions=[];
+  for(let l=0;l<cols;l++){
+    const count=sizes[l],col=[];
+    const cx=x+(cols===1?.5:l/(cols-1))*w;
+    const spacing=Math.min(52,h/Math.max(1,count));
+    const top=y+h/2-(count-1)*spacing/2;
+    for(let n=0;n<count;n++)col.push({x:cx,y:top+n*spacing});
+    positions.push(col);
+  }
+  return positions;
+}
+function activationColour(v,isOutput=false){
+  const t=clamp((v+1)/2,0,1);
+  if(isOutput&&taskEl.value==='classification'){
+    return v>=.5?'rgba(184,215,173,.90)':'rgba(215,168,95,.90)';
+  }
+  const a=.25+.65*Math.abs(clamp(v,-1,1));
+  return v>=0?`rgba(184,215,173,${a})`:`rgba(215,168,95,${a})`;
+}
+function drawNetwork(x,y,w,h,showValues=true,showGradients=false){
+  const pos=networkLayout(x,y,w,h);
+  const cache=activeCache;
+  const forwardProgress=phase==='forward'?clamp(phaseT,0,1):phase==='backward'||phase==='update'||phase==='hold'?1:0;
+  const backwardProgress=phase==='backward'?clamp(phaseT,0,1):phase==='update'||phase==='hold'?1:0;
+
+  for(let l=0;l<W.length;l++){
+    const maxAbs=Math.max(.001,...W[l].flat().map(Math.abs));
+    for(let j=0;j<W[l].length;j++){
+      for(let i=0;i<W[l][j].length;i++){
+        const wt=W[l][j][i],alpha=.10+.55*Math.abs(wt)/maxAbs;
+        let col=wt>=0?`rgba(184,215,173,${alpha})`:`rgba(217,143,130,${alpha})`;
+        let width=1+2*Math.abs(wt)/maxAbs;
+        const layerReached=(l+1)/(W.length)<=forwardProgress+.02;
+        if(phase==='forward'&&!layerReached){col='rgba(170,154,136,.08)';width=1}
+        if(showGradients&&activeGrads){
+          const g=Math.abs(activeGrads.dW[l][j][i]);
+          if(backwardProgress>=(W.length-l)/W.length-.02){
+            col='rgba(242,201,120,.75)';width=1.5+Math.min(3,g*8);
+          }
+        }
+        line([pos[l][i].x,pos[l][i].y],[pos[l+1][j].x,pos[l+1][j].y],col,width);
+      }
+    }
+  }
+
+  for(let l=0;l<pos.length;l++){
+    for(let n=0;n<pos[l].length;n++){
+      const isOut=l===pos.length-1;
+      const value=cache?.acts?.[l]?.[n] ?? 0;
+      const reached=l===0||forwardProgress>=l/(pos.length-1)-.02;
+      const col=reached?activationColour(value,isOut):'rgba(80,70,62,.72)';
+      dot(pos[l][n].x,pos[l][n].y,isOut?13:11,col,reached?9:0);
+      ring(pos[l][n].x,pos[l][n].y,isOut?13:11,'rgba(243,234,220,.22)',1);
+      if(showValues&&cache&&reached){
+        text(value.toFixed(2),pos[l][n].x,pos[l][n].y+4,'#080705',8,'center','700');
+      }
+      if(showGradients&&activeGrads&&l>0){
+        const grad=activeGrads.dB[l-1][n];
+        const reachedBack=backwardProgress>=(pos.length-1-l)/(pos.length-1)-.02;
+        if(reachedBack)text(`∂${grad.toFixed(2)}`,pos[l][n].x+15,pos[l][n].y-13,'#f2c978',8,'left','600');
+      }
+    }
+  }
+
+  for(let l=0;l<pos.length;l++){
+    let label='';
+    if(l===0)label='Input';
+    else if(l===pos.length-1)label='Output';
+    else label=`Hidden ${l}`;
+    text(label,pos[l][0].x,y-18,l===0?'#d7a85f':l===pos.length-1?'#b8d7ad':'#c9a7de',11,'center','700');
+  }
+  return pos;
+}
+function drawBackpropMode(Wd,Hd){
+  const leftW=Wd*.34;
+  box(25,35,leftW-40,Hd-100);
+  box(leftW+5,35,Wd-leftW-30,Hd-100);
+
+  text('Current training sample',45,65,'#f2c978',13,'left','700');
+  if(activeIndex>=0){
+    const s=data[activeIndex];
+    if(taskEl.value==='classification'){
+      const gx=50,gy=95,gw=leftW-90,gh=220;
+      line([gx,gy+gh],[gx+gw,gy+gh],'rgba(243,234,220,.22)',1);
+      line([gx,gy],[gx,gy+gh],'rgba(243,234,220,.22)',1);
+      data.forEach((p,i)=>dot(gx+p.input[0]*gw,gy+(1-p.input[1])*gh,i===activeIndex?9:3,i===activeIndex?'#f2c978':p.target===0?'#d7a85f':'#b8d7ad',i===activeIndex?20:2));
+      text(`target class = ${s.target}`,45,345,'#f3eadc',15,'left','700');
+      text(`prediction = ${activeCache.output.toFixed(3)}`,45,375,'#b8d7ad',14,'left','600');
+    }else{
+      text(`x = ${s.input[0].toFixed(3)}`,45,105,'#f3eadc',15,'left','700');
+      text(`target y = ${s.target.toFixed(3)}`,45,138,'#f3eadc',15,'left','700');
+      text(`prediction = ${activeCache.output.toFixed(3)}`,45,171,'#b8d7ad',15,'left','700');
+    }
+    text(`sample loss = ${activeLoss.toFixed(4)}`,45,420,'#d98f82',14,'left','600');
+    text(`phase: ${phase.toUpperCase()}`,45,452,'#f2c978',13,'left','700');
+
+    const messages={
+      forward:'Signals move from input to output.',
+      backward:'Loss gradients move backward through layers.',
+      update:'SGD changes every connected weight and bias.',
+      hold:'Update completed; selecting next sample.',
+      idle:'Press Play or One backprop step.'
+    };
+    text(messages[phase]||'Training complete.',45,495,'#aa9a88',12,'left');
+  }else{
+    text('Press Play training or One backprop step.',45,110,'#aa9a88',12,'left');
+  }
+
+  text('Forward pass and backpropagation',leftW+28,65,'#f2c978',13,'left','700');
+  drawNetwork(leftW+50,105,Wd-leftW-110,Hd-205,true,true);
+
+  box(leftW+25,Hd-150,Wd-leftW-70,72);
+  text('Forward: a = activation(Wa + b)',leftW+45,Hd-122,'#f3eadc',13,'left','600');
+  text('Backward: gradients use the chain rule; SGD subtracts learning_rate × gradient.',leftW+45,Hd-96,'#aa9a88',11,'left');
+}
+function drawArchitectureMode(Wd,Hd){
+  box(28,35,Wd-56,Hd-100);
+  text('Editable MLP architecture',50,67,'#f2c978',14,'left','700');
+  text(`Input ${sizes[0]}  →  ${hiddenSizes.slice(0,+hiddenEl.value).join('  →  ')}  →  Output 1`,50,95,'#f3eadc',16,'left','600');
+  drawNetwork(85,150,Wd-170,Hd-300,false,false);
+
+  const bottom=Hd-125;
+  text(`Hidden activation: ${activationEl.selectedOptions[0].text}`,55,bottom,'#aa9a88',12,'left');
+  text(`Task output: ${taskEl.value==='classification'?'Sigmoid probability':'Linear value'}`,55,bottom+24,'#aa9a88',12,'left');
+  text(`Trainable parameters: ${parameterCount()}`,55,bottom+48,'#f2c978',12,'left','700');
+
+  text('Change every layer independently from the customize sheet.',Wd-55,bottom+24,'#b8d7ad',12,'right','600');
+}
+
+function withTrackedValues(weight,biasValue,fn){
+  const r=trackedRef();
+  const oldW=W[r.layer][r.neuron][r.input];
+  const oldB=B[r.layer][r.neuron];
+  W[r.layer][r.neuron][r.input]=weight;
+  B[r.layer][r.neuron]=biasValue;
+  const result=fn();
+  W[r.layer][r.neuron][r.input]=oldW;
+  B[r.layer][r.neuron]=oldB;
+  return result;
+}
+function buildSurfaceCache(){
+  const r=trackedRef();
+  const cw=W[r.layer][r.neuron][r.input],cb=B[r.layer][r.neuron];
+
+  const radiusW=5.0,radiusB=5.0,n=23;
+  const grid=[];
+  let minLoss=Infinity,maxLoss=-Infinity;
+
+  for(let i=0;i<n;i++){
+    const row=[];
+    const wv=cw-radiusW+2*radiusW*i/(n-1);
+    for(let j=0;j<n;j++){
+      const bv=cb-radiusB+2*radiusB*j/(n-1);
+      const loss=withTrackedValues(wv,bv,datasetLoss);
+      minLoss=Math.min(minLoss,loss);
+      maxLoss=Math.max(maxLoss,loss);
+      row.push({w:wv,b:bv,loss});
+    }
+    grid.push(row);
+  }
+
+  surfaceCache={
+    grid,cw,cb,radiusW,radiusB,minLoss,maxLoss,
+    lossRange:Math.max(1e-8,maxLoss-minLoss),ref:r
+  };
+  surfaceDirty=false;
+  lastSurfaceBuild=performance.now();
+}
+function surfaceHeight(loss,cache){
+  const relative=Math.max(0,loss-cache.minLoss);
+  const range=Math.max(1e-8,cache.lossRange);
+  return Math.log1p(7*relative/range)/Math.log(8);
+}
+function projectSurface3D(w,bv,loss,Wd,Hd,cache,forceFloor=false){
+  const x=((w-cache.cw)/cache.radiusW)*285;
+  const z=((bv-cache.cb)/cache.radiusB)*230;
+  const y=forceFloor?0:surfaceHeight(loss,cache)*285;
+
+  const cy=Math.cos(rotY),sy=Math.sin(rotY);
+  const x1=x*cy-z*sy;
+  const z1=x*sy+z*cy;
+
+  const cx=Math.cos(rotX),sx=Math.sin(rotX);
+  const y1=y*cx-z1*sx;
+  const z2=y*sx+z1*cx;
+
+  const cameraDistance=1050;
+  const perspective=cameraDistance/(cameraDistance+z2+220);
+  const scale=perspective*surfaceZoom;
+
+  return {
+    x:Wd*.57+x1*scale,
+    y:Hd*.73-y1*scale,
+    depth:z2,
+    scale
+  };
+}
+function surfaceColour(height,alpha=1){
+  const h=clamp(height,0,1);
+  const r=Math.round(74+(224-74)*h);
+  const g=Math.round(54+(164-54)*h);
+  const b=Math.round(98+(93-98)*h);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function drawSurfaceMode(Wd,Hd){
+  if((surfaceDirty||!surfaceCache)&&performance.now()-lastSurfaceBuild>250)buildSurfaceCache();
+  if(!surfaceCache)buildSurfaceCache();
+  const sc=surfaceCache;
+
+  ctx.save();
+  ctx.strokeStyle='rgba(215,168,95,.035)';
+  for(let x=30;x<Wd;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,Wd);ctx.stroke()}
+  for(let y=35;y<Hd;y+=45){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(Wd,y);ctx.stroke()}
+  ctx.restore();
+
+  const floorLines=10;
+  for(let i=0;i<=floorLines;i++){
+    const t=i/floorLines;
+    const wv=sc.cw-sc.radiusW+2*sc.radiusW*t;
+    const p1=projectSurface3D(wv,sc.cb-sc.radiusB,sc.minLoss,Wd,Hd,sc,true);
+    const p2=projectSurface3D(wv,sc.cb+sc.radiusB,sc.minLoss,Wd,Hd,sc,true);
+    line([p1.x,p1.y],[p2.x,p2.y],'rgba(184,215,173,.10)',1);
+
+    const bv=sc.cb-sc.radiusB+2*sc.radiusB*t;
+    const q1=projectSurface3D(sc.cw-sc.radiusW,bv,sc.minLoss,Wd,Hd,sc,true);
+    const q2=projectSurface3D(sc.cw+sc.radiusW,bv,sc.minLoss,Wd,Hd,sc,true);
+    line([q1.x,q1.y],[q2.x,q2.y],'rgba(215,168,95,.10)',1);
+  }
+
+  const cells=[];
+  for(let i=0;i<sc.grid.length-1;i++){
+    for(let j=0;j<sc.grid[i].length-1;j++){
+      const a=sc.grid[i][j],bb=sc.grid[i+1][j],cc=sc.grid[i+1][j+1],dd=sc.grid[i][j+1];
+      const p1=projectSurface3D(a.w,a.b,a.loss,Wd,Hd,sc);
+      const p2=projectSurface3D(bb.w,bb.b,bb.loss,Wd,Hd,sc);
+      const p3=projectSurface3D(cc.w,cc.b,cc.loss,Wd,Hd,sc);
+      const p4=projectSurface3D(dd.w,dd.b,dd.loss,Wd,Hd,sc);
+      const avgLoss=(a.loss+bb.loss+cc.loss+dd.loss)/4;
+      const height=surfaceHeight(avgLoss,sc);
+      cells.push({
+        pts:[p1,p2,p3,p4],
+        depth:(p1.depth+p2.depth+p3.depth+p4.depth)/4,
+        height
+      });
+    }
+  }
+  cells.sort((a,b)=>b.depth-a.depth);
+
+  for(const cell of cells){
+    const [p1,p2,p3,p4]=cell.pts;
+    ctx.save();
+    ctx.fillStyle=surfaceColour(cell.height,.34+.48*cell.height);
+    ctx.strokeStyle=`rgba(242,201,120,${.05+.12*cell.height})`;
+    ctx.lineWidth=.7;
+    ctx.beginPath();
+    ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);
+    ctx.lineTo(p3.x,p3.y);ctx.lineTo(p4.x,p4.y);
+    ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.restore();
+  }
+
+  const contourLevels=[.2,.4,.6,.8];
+  for(const level of contourLevels){
+    ctx.save();
+    ctx.strokeStyle=`rgba(243,234,220,${.10+.08*level})`;
+    ctx.lineWidth=1.2;
+    for(let i=0;i<sc.grid.length;i++){
+      ctx.beginPath();
+      let started=false;
+      for(let j=0;j<sc.grid[i].length;j++){
+        const v=sc.grid[i][j];
+        if(Math.abs(surfaceHeight(v.loss,sc)-level)<.055){
+          const p=projectSurface3D(v.w,v.b,v.loss,Wd,Hd,sc);
+          if(!started){ctx.moveTo(p.x,p.y);started=true}
+          else ctx.lineTo(p.x,p.y);
+        }
+      }
+      if(started)ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  const r=trackedRef();
+  const curW=W[r.layer][r.neuron][r.input];
+  const curB=B[r.layer][r.neuron];
+  const curL=datasetLoss();
+  const cur=projectSurface3D(curW,curB,curL,Wd,Hd,sc);
+  const floor=projectSurface3D(curW,curB,sc.minLoss,Wd,Hd,sc,true);
+
+  line([floor.x,floor.y],[cur.x,cur.y],'rgba(242,201,120,.55)',2);
+  dot(cur.x,cur.y,12,'#f2c978',26);
+  ring(cur.x,cur.y,18,'rgba(243,234,220,.55)',2);
+  text('current parameter pair',cur.x,cur.y-21,'#f2c978',11,'center','700');
+
+  const origin=projectSurface3D(sc.cw-sc.radiusW,sc.cb-sc.radiusB,sc.minLoss,Wd,Hd,sc,true);
+  const wAxis=projectSurface3D(sc.cw+sc.radiusW,sc.cb-sc.radiusB,sc.minLoss,Wd,Hd,sc,true);
+  const bAxis=projectSurface3D(sc.cw-sc.radiusW,sc.cb+sc.radiusB,sc.minLoss,Wd,Hd,sc,true);
+  const lossAxis=projectSurface3D(sc.cw-sc.radiusW,sc.cb-sc.radiusB,sc.maxLoss,Wd,Hd,sc);
+
+  arrow([origin.x,origin.y],[wAxis.x,wAxis.y],'#d7a85f',.9);
+  arrow([origin.x,origin.y],[bAxis.x,bAxis.y],'#b8d7ad',.9);
+  arrow([origin.x,origin.y],[lossAxis.x,lossAxis.y],'#d98f82',.9);
+  text('weight',wAxis.x+9,wAxis.y,'#f2c978',11,'left','700');
+  text('bias',bAxis.x+9,bAxis.y,'#b8d7ad',11,'left','700');
+  text('loss',lossAxis.x,lossAxis.y-10,'#d98f82',11,'center','700');
+
+  box(24,20,500,126);
+  text('TRUE 3D weight–bias–loss surface',42,45,'#f2c978',13,'left','700');
+  text(`Hidden layer ${r.layer+1}, neuron ${r.neuron+1}: input weight 1 and its bias`,42,73,'#f3eadc',14,'left','600');
+  text('X = selected weight, Z = selected bias, vertical height = dataset loss.',42,100,'#aa9a88',12,'left');
+  text('The surface uses perspective, depth sorting, height shading, contours, orbit rotation and zoom.',42,124,'#b8d7ad',11,'left','600');
+  text('This is still a 2-parameter slice because the complete MLP loss space has many dimensions.',42,143,'#aa9a88',10,'left');
+
+  const ix=Wd*.76,iy=Hd*.07,iw=Wd*.19,ih=Hd*.27;
+  box(ix,iy,iw,ih);
+  text('3D controls',ix+15,iy+24,'#f2c978',12,'left','700');
+  text('Drag: rotate camera',ix+15,iy+55,'#f3eadc',12,'left');
+  text('Mouse wheel: zoom',ix+15,iy+82,'#f3eadc',12,'left');
+  text('Double-click: reset view',ix+15,iy+109,'#f3eadc',12,'left');
+  text(`weight = ${curW.toFixed(3)}`,ix+15,iy+145,'#aa9a88',12,'left');
+  text(`bias = ${curB.toFixed(3)}`,ix+15,iy+169,'#aa9a88',12,'left');
+  text(`loss = ${curL.toFixed(3)}`,ix+15,iy+193,'#b8d7ad',12,'left','600');
+  text(`surface range ${sc.minLoss.toFixed(3)}–${sc.maxLoss.toFixed(3)}`,ix+15,iy+217,'#aa9a88',10,'left');
+}
+
+function drawLineChart(x,y,w,h,values,color,title,formatter=v=>v.toFixed(3),invert=false){
+  box(x,y,w,h);
+  text(title,x+18,y+24,'#f2c978',12,'left','700');
+  const gx=x+45,gy=y+42,gw=w-65,gh=h-72;
+  line([gx,gy+gh],[gx+gw,gy+gh],'rgba(243,234,220,.18)',1);
+  line([gx,gy],[gx,gy+gh],'rgba(243,234,220,.18)',1);
+  if(!values.length)return;
+  let min=Math.min(...values),max=Math.max(...values);
+  if(Math.abs(max-min)<1e-8){max=min+1}
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=3;ctx.beginPath();
+  values.forEach((v,i)=>{
+    const px=gx+i/Math.max(1,values.length-1)*gw;
+    const norm=(v-min)/(max-min);
+    const py=invert?gy+norm*gh:gy+gh-norm*gh;
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  });
+  ctx.stroke();ctx.restore();
+  text(formatter(values[values.length-1]),gx+gw,gy+14,color,11,'right','700');
+}
+function drawActivationCurve(x,y,w,h,type){
+  box(x,y,w,h);
+  text(`${type} activation`,x+18,y+24,'#f2c978',12,'left','700');
+  const gx=x+42,gy=y+42,gw=w-62,gh=h-65;
+  line([gx,gy+gh/2],[gx+gw,gy+gh/2],'rgba(243,234,220,.16)',1);
+  line([gx+gw/2,gy],[gx+gw/2,gy+gh],'rgba(243,234,220,.16)',1);
+  ctx.save();ctx.strokeStyle='#9b79b8';ctx.lineWidth=3;ctx.beginPath();
+  for(let i=0;i<=120;i++){
+    const z=-4+8*i/120;
+    let a=type==='ReLU'?Math.max(0,z):type==='Sigmoid'?sigmoid(z):Math.tanh(z);
+    const minY=type==='ReLU'?-1: -1.2,maxY=type==='ReLU'?4.2:1.2;
+    const px=map(z,-4,4,gx,gx+gw),py=map(a,minY,maxY,gy+gh,gy);
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  }
+  ctx.stroke();ctx.restore();
+}
+function drawMetricsMode(Wd,Hd){
+  const margin=30,gap=18,top=38;
+  const leftW=(Wd-margin*2-gap)*.62,rightW=Wd-margin*2-gap-leftW;
+  const chartH=(Hd-120-gap)/2;
+
+  drawLineChart(margin,top,leftW,chartH,lossHistory,'#d98f82','Dataset loss across training',v=>v.toFixed(3),true);
+  drawLineChart(margin,top+chartH+gap,leftW,chartH,scoreHistory,'#b8d7ad',
+    taskEl.value==='classification'?'Accuracy across training':'RMSE across training',
+    v=>taskEl.value==='classification'?`${Math.round(v*100)}%`:v.toFixed(3),
+    taskEl.value==='regression');
+
+  const rx=margin+leftW+gap;
+  drawActivationCurve(rx,top,rightW,chartH,activationEl.selectedOptions[0].text);
+  box(rx,top+chartH+gap,rightW,chartH);
+  text('Network summary',rx+18,top+chartH+gap+25,'#f2c978',12,'left','700');
+  text(`Architecture: ${sizes.join(' → ')}`,rx+18,top+chartH+gap+60,'#f3eadc',14,'left','600');
+  text(`Hidden activation: ${activationEl.selectedOptions[0].text}`,rx+18,top+chartH+gap+90,'#aa9a88',12,'left');
+  text(`Trainable parameters: ${parameterCount()}`,rx+18,top+chartH+gap+117,'#aa9a88',12,'left');
+  text(`Updates completed: ${updateCount}`,rx+18,top+chartH+gap+144,'#aa9a88',12,'left');
+  text(taskEl.value==='classification'?'Output activation: Sigmoid':'Output activation: Linear',rx+18,top+chartH+gap+171,'#b8d7ad',12,'left','600');
+}
+function draw(){
+  const Wd=canvas.clientWidth,Hd=canvas.clientHeight;
+  if(Wd<=0||Hd<=0)return;
+  ctx.clearRect(0,0,Wd,Hd);
+  updateStatus();
+
+  if(mode==='training')drawTrainingMode(Wd,Hd);
+  else if(mode==='backprop')drawBackpropMode(Wd,Hd);
+  else if(mode==='architecture')drawArchitectureMode(Wd,Hd);
+  else if(mode==='surface')drawSurfaceMode(Wd,Hd);
+  else drawMetricsMode(Wd,Hd);
+
+  const labels={
+    training:['Training Graph: the network prediction changes as SGD updates all weights and biases.','Mode 1'],
+    backprop:['Live Backprop: signals move forward, gradients move backward, then SGD updates parameters.','Mode 2'],
+    architecture:['Architecture Editor: choose 1–4 hidden layers and 2–10 neurons independently in every layer.','Mode 3'],
+    surface:['True 3D Weight-Bias-Loss: rotate and zoom a perspective loss surface over one selected weight and bias.','Mode 4'],
+    metrics:['Analysis: inspect loss, score, activation shape, architecture, and parameter count.','Mode 5']
+  };
+  $('note').textContent=labels[mode][0];
+  $('badge').textContent=playing&&!paused?'Training':labels[mode][1];
+}
+function loop(now){
+  const dt=lastTime?Math.min(80,now-lastTime):16;
+  lastTime=now;
+  if(playing&&!paused){
+    phaseT+=dt/(+speedEl.value);
+    if(phase==='idle'||phase==='hold'){
+      beginSample();
+    }else if(phase==='forward'&&phaseT>=1){
+      phase='backward';phaseT=0;
+    }else if(phase==='backward'&&phaseT>=1){
+      phase='update';phaseT=0;
+    }else if(phase==='update'&&phaseT>=1){
+      finishCurrentStep();
+    }
+    draw();
+  }
+  raf=requestAnimationFrame(loop);
+}
+
+function rebuildFromControls(){
+  for(let i=0;i<4;i++)hiddenSizes[i]=+layerRanges[i].value;
+  updateLayerVisibility();
+  generateData();
+  resetTraining(true);
+}
+
+// ─── UI wiring ───
+document.querySelectorAll('#viewControl button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('#viewControl button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');mode=btn.dataset.mode;draw();}));
+$('playBtn').onclick=()=>{if(phase==='done')resetTraining(false);if(playing&&!paused){paused=true;}else{playing=true;paused=false;if(phase==='idle')beginSample();}updateStatus();draw();};
+$('stepBtn').onclick=oneCompleteStep;
+$('resetBtn').onclick=()=>resetTraining(true);
+function openSheet(){$('sheet').classList.add('show');$('sheetBackdrop').classList.add('show');}
+function closeSheet(){$('sheet').classList.remove('show');$('sheetBackdrop').classList.remove('show');}
+$('settingsBtn').onclick=openSheet;
+$('eqField').onclick=openSheet;
+$('sheetClose').onclick=closeSheet;
+$('sheetBackdrop').onclick=closeSheet;
+$('eqApply').onclick=()=>{applyEquation();closeSheet();};
+$('eqInput').addEventListener('keypress',e=>{if(e.key==='Enter'){applyEquation();closeSheet();}});
+document.querySelectorAll('.preset').forEach(btn=>btn.onclick=()=>{$('eqInput').value=btn.dataset.eq;applyEquation();closeSheet();});
+document.querySelectorAll('#sourceToggle button').forEach(btn=>btn.onclick=()=>setDataSource(btn.dataset.source));
+document.querySelectorAll('#taskSegmented button').forEach(btn=>btn.addEventListener('click',()=>{
+  taskEl.value=btn.dataset.task;
+  document.querySelectorAll('#taskSegmented button').forEach(b=>b.classList.toggle('active',b===btn));
+  rebuildFromControls();
+}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
+$('eqSamples').addEventListener('change',()=>{$('samplesVal').textContent=$('eqSamples').value;if(dataSource==='equation'&&taskEl.value==='regression'){generateData();resetTraining(true);}});
+$('eqNoise').addEventListener('input',function(){$('noiseVal').textContent=Math.round(parseFloat(this.value)*100)+'%';if(dataSource==='equation'&&taskEl.value==='regression'){generateData();resetTraining(true);}});
+hiddenEl.addEventListener('input',rebuildFromControls);
+layerRanges.forEach(el=>el.addEventListener('input',rebuildFromControls));
+activationEl.addEventListener('change',()=>resetTraining(true));
+[lrEl,epochsEl].forEach(el=>el.addEventListener('input',()=>{updateStatus();draw();}));
+speedEl.addEventListener('change',()=>{updateStatus();draw();});
+trackLayerEl.addEventListener('change',()=>{updateTrackedNeurons();draw();});
+trackNeuronEl.addEventListener('change',()=>{updateTrackedNeurons();draw();});
+canvas.addEventListener('pointerdown',e=>{
+  if(mode!=='surface')return;
+  drag=true;lastPX=e.clientX;lastPY=e.clientY;canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove',e=>{
+  if(!drag||mode!=='surface')return;
+  rotY+=(e.clientX-lastPX)*.008;
+  rotX=clamp(rotX+(e.clientY-lastPY)*.008,-1.35,-.25);
+  lastPX=e.clientX;lastPY=e.clientY;draw();
+});
+canvas.addEventListener('pointerup',()=>drag=false);
+canvas.addEventListener('pointercancel',()=>drag=false);
+canvas.addEventListener('wheel',e=>{
+  if(mode!=='surface')return;
+  e.preventDefault();
+  surfaceZoom=clamp(surfaceZoom*(e.deltaY>0?.90:1.10),.55,2.15);
+  draw();
+},{passive:false});
+canvas.addEventListener('dblclick',()=>{
+  if(mode!=='surface')return;
+  rotX=-0.56;rotY=0.74;surfaceZoom=1.0;
+  draw();
+});
+
+for(let i=0;i<4;i++)hiddenSizes[i]=+layerRanges[i].value;
+updateLayerVisibility();
+generateData();
+resetTraining(true);
+resize();
+window.__mlpDemoTest={
+  step:oneCompleteStep,
+  state:()=>({sizes:[...sizes],loss:datasetLoss(),score:datasetScore(),epoch,cursor,phase,params:parameterCount()}),
+  run:n=>{for(let i=0;i<n;i++)oneCompleteStep();return window.__mlpDemoTest.state()}
+};
+raf=requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ML Lab — Machine Learning Visualization Playground</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#000;
+    --bg-2:#0a0a0c;
+    --surface:#1c1c1e;
+    --surface-2:#2c2c2e;
+    --surface-3:#3a3a3c;
+    --border:#38383a;
+    --border-light:#48484a;
+    --text:#f5f5f7;
+    --text-2:#a1a1a6;
+    --text-3:#6e6e73;
+    --gold:#d7a85f;
+    --gold-2:#f2c978;
+    --violet:#9b79b8;
+    --green:#b8d7ad;
+    --red:#d98f82;
+    --cyan:#06b6d4;
+    --radius:14px;
+    --radius-sm:10px;
+    --radius-xs:7px;
+  }
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+    overflow-x:hidden;
+  }
+
+  /* ─── Nav ─── */
+  nav{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    background:rgba(0,0,0,0.72);
+    border-bottom:1px solid rgba(255,255,255,0.08);
+    height:44px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 22px;
+  }
+  nav .logo{
+    font-size:15px;font-weight:600;letter-spacing:-0.02em;
+    display:flex;align-items:center;gap:8px;
+  }
+  nav .logo .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:linear-gradient(135deg,var(--gold-2),var(--gold));
+    box-shadow:0 0 12px rgba(215,168,95,0.6);
+  }
+  nav .links{display:flex;gap:28px}
+  nav .links a{
+    color:var(--text-2);text-decoration:none;font-size:13px;font-weight:400;
+    transition:color 0.2s;
+  }
+  nav .links a:hover{color:var(--text)}
+
+  /* ─── Hero ─── */
+  .hero{
+    min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;
+    padding:120px 22px 80px;
+    position:relative;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 0%,rgba(215,168,95,0.12),transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%,rgba(155,121,184,0.08),transparent 60%),
+      var(--bg);
+  }
+  .hero .eyebrow{
+    color:var(--gold-2);
+    font-size:14px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;
+    margin-bottom:18px;
+  }
+  .hero h1{
+    font-size:clamp(40px,7vw,80px);
+    font-weight:700;letter-spacing:-0.04em;line-height:1.05;
+    margin-bottom:22px;
+    background:linear-gradient(180deg,#fff 0%,#a1a1a6 100%);
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .hero .tagline{
+    font-size:clamp(18px,2.2vw,24px);
+    color:var(--text-2);font-weight:400;letter-spacing:-0.01em;
+    max-width:680px;margin:0 auto 36px;line-height:1.4;
+  }
+  .hero .cta-row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+  .btn{
+    padding:12px 24px;border-radius:980px;font-size:14px;font-weight:500;
+    text-decoration:none;display:inline-flex;align-items:center;gap:6px;
+    transition:all 0.2s;cursor:pointer;border:none;
+  }
+  .btn-primary{
+    background:linear-gradient(180deg,var(--gold-2),var(--gold));
+    color:#1a1209;font-weight:600;
+  }
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(215,168,95,0.3)}
+  .btn-ghost{
+    background:rgba(255,255,255,0.06);
+    color:var(--text);border:1px solid rgba(255,255,255,0.1);
+  }
+  .btn-ghost:hover{background:rgba(255,255,255,0.1)}
+
+  .hero .stats{
+    display:flex;gap:48px;margin-top:72px;flex-wrap:wrap;justify-content:center;
+  }
+  .hero .stat{text-align:center}
+  .hero .stat .num{
+    font-size:clamp(32px,4vw,48px);font-weight:700;letter-spacing:-0.03em;
+    background:linear-gradient(180deg,var(--gold-2),var(--gold));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .hero .stat .label{font-size:13px;color:var(--text-3);margin-top:4px;letter-spacing:0.02em}
+
+  /* ─── Section ─── */
+  section{padding:100px 22px;position:relative}
+  .section-inner{max-width:1200px;margin:0 auto}
+  .section-eyebrow{
+    color:var(--gold-2);font-size:13px;font-weight:600;letter-spacing:0.08em;
+    text-transform:uppercase;margin-bottom:14px;
+  }
+  .section-title{
+    font-size:clamp(32px,5vw,52px);font-weight:700;letter-spacing:-0.03em;
+    line-height:1.1;margin-bottom:18px;
+  }
+  .section-sub{
+    font-size:clamp(17px,2vw,21px);color:var(--text-2);
+    max-width:680px;line-height:1.4;margin-bottom:56px;
+  }
+
+  /* ─── Feature grid ─── */
+  .features{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:18px;
+  }
+  .feature{
+    background:linear-gradient(180deg,rgba(28,28,30,0.8),rgba(20,20,22,0.8));
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:28px;
+    transition:all 0.3s;
+    backdrop-filter:blur(20px);
+  }
+  .feature:hover{
+    border-color:var(--border-light);
+    transform:translateY(-2px);
+    background:linear-gradient(180deg,rgba(44,44,46,0.8),rgba(28,28,30,0.8));
+  }
+  .feature .icon{
+    width:44px;height:44px;border-radius:11px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;font-weight:700;margin-bottom:18px;
+    font-family:Georgia,serif;
+  }
+  .feature h3{font-size:19px;font-weight:600;letter-spacing:-0.01em;margin-bottom:8px}
+  .feature p{font-size:14px;color:var(--text-2);line-height:1.5}
+
+  /* ─── Demo grid ─── */
+  .demos-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
+    gap:20px;
+  }
+  .demo-card{
+    background:linear-gradient(180deg,rgba(28,28,30,0.9),rgba(20,20,22,0.9));
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:0;overflow:hidden;
+    text-decoration:none;color:inherit;
+    transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+    position:relative;
+    display:flex;flex-direction:column;
+  }
+  .demo-card::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:3px;
+    background:var(--accent);
+    z-index:1;
+  }
+  .demo-card[data-color="gold"]{--accent:linear-gradient(90deg,#d7a85f,#f2c978)}
+  .demo-card[data-color="violet"]{--accent:linear-gradient(90deg,#9b79b8,#b89dd6)}
+  .demo-card[data-color="green"]{--accent:linear-gradient(90deg,#b8d7ad,#9b79b8)}
+  .demo-card[data-color="red"]{--accent:linear-gradient(90deg,#d98f82,#d7a85f)}
+  .demo-card[data-color="cyan"]{--accent:linear-gradient(90deg,#06b6d4,#9b79b8)}
+  .demo-card[data-color="gold2"]{--accent:linear-gradient(90deg,#f2c978,#d7a85f)}
+  .demo-card:hover{
+    transform:translateY(-4px);
+    border-color:var(--border-light);
+    box-shadow:0 20px 40px rgba(0,0,0,0.4);
+  }
+  .demo-card .preview{
+    height:160px;
+    background:linear-gradient(135deg,rgba(8,7,5,0.6),rgba(20,18,14,0.6));
+    display:flex;align-items:center;justify-content:center;
+    position:relative;overflow:hidden;
+    border-bottom:1px solid var(--border);
+  }
+  .demo-card .preview .glyph{
+    font-size:54px;font-weight:700;font-family:Georgia,serif;
+    background:linear-gradient(135deg,var(--text),var(--text-3));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    opacity:0.5;
+  }
+  .demo-card .preview .badge{
+    position:absolute;top:12px;right:12px;
+    background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:999px;padding:4px 10px;
+    font-size:10px;font-weight:600;letter-spacing:0.04em;
+    color:var(--text-2);
+  }
+  .demo-card .body{padding:22px;flex:1;display:flex;flex-direction:column}
+  .demo-card .num{
+    font-size:11px;color:var(--gold);font-weight:600;letter-spacing:0.1em;
+    margin-bottom:6px;font-family:'SF Mono',monospace;
+  }
+  .demo-card h3{font-size:20px;font-weight:600;letter-spacing:-0.01em;margin-bottom:6px}
+  .demo-card .desc{font-size:13px;color:var(--text-2);line-height:1.5;margin-bottom:14px;flex:1}
+  .demo-card .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .demo-card .tag{
+    font-size:10px;padding:3px 8px;border-radius:5px;
+    background:rgba(255,255,255,0.06);color:var(--text-2);
+    font-family:'SF Mono',monospace;
+  }
+  .demo-card .open{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:13px;font-weight:500;color:var(--gold-2);
+  }
+  .demo-card .open::after{content:'→';transition:transform 0.2s}
+  .demo-card:hover .open::after{transform:translateX(3px)}
+
+  /* ─── How it works ─── */
+  .steps{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:32px;margin-top:40px;
+  }
+  .step{text-align:left}
+  .step .num-circle{
+    width:48px;height:48px;border-radius:50%;
+    background:linear-gradient(135deg,var(--gold-2),var(--gold));
+    color:#1a1209;font-size:20px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:18px;
+    box-shadow:0 4px 20px rgba(215,168,95,0.3);
+  }
+  .step h4{font-size:17px;font-weight:600;margin-bottom:8px}
+  .step p{font-size:14px;color:var(--text-2);line-height:1.5}
+
+  /* ─── Equation examples ─── */
+  .eq-showcase{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:14px;margin-top:40px;
+  }
+  .eq-card{
+    background:rgba(28,28,30,0.6);
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    padding:18px;
+    backdrop-filter:blur(10px);
+  }
+  .eq-card .label{
+    font-size:11px;color:var(--gold-2);font-weight:600;letter-spacing:0.06em;
+    text-transform:uppercase;margin-bottom:10px;
+  }
+  .eq-card .eq{
+    font-family:'SF Mono','JetBrains Mono',monospace;
+    font-size:15px;color:var(--text);
+    padding:10px 12px;background:rgba(0,0,0,0.4);
+    border-radius:7px;border:1px solid var(--border);
+    margin-bottom:8px;
+  }
+  .eq-card .desc{font-size:12px;color:var(--text-3);line-height:1.4}
+
+  /* ─── Footer ─── */
+  footer{
+    padding:48px 22px 32px;
+    border-top:1px solid var(--border);
+    text-align:center;
+  }
+  footer .links{
+    display:flex;gap:24px;justify-content:center;margin-bottom:18px;flex-wrap:wrap;
+  }
+  footer .links a{
+    color:var(--text-3);text-decoration:none;font-size:12px;
+    transition:color 0.2s;
+  }
+  footer .links a:hover{color:var(--text-2)}
+  footer .copyright{
+    font-size:11px;color:var(--text-3);font-family:'SF Mono',monospace;
+  }
+
+  @media(max-width:768px){
+    nav .links{display:none}
+    .hero .stats{gap:24px}
+    section{padding:64px 22px}
+  }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="emergence-theme.css">
+</head>
+<body>
+
+<nav>
+  <div class="logo"><div class="dot"></div>ML Lab</div>
+  <div class="links">
+    <a href="#features">Features</a>
+    <a href="#demos">Demos</a>
+    <a href="#how">How it works</a>
+    <a href="#equations">Equations</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="eyebrow">Machine Learning Visualization</div>
+  <h1>See math become<br>intelligence.</h1>
+  <p class="tagline">Six polished demos that let you type any mathematical equation and watch machine learning models learn it — in real time, right in your browser.</p>
+  <div class="cta-row">
+    <a href="linear_regression.html" class="btn btn-primary">Open Linear Regression →</a>
+    <a href="#demos" class="btn btn-ghost">Browse all demos</a>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="num">6</div><div class="label">Algorithms</div></div>
+    <div class="stat"><div class="num">22</div><div class="label">Visual views</div></div>
+    <div class="stat"><div class="num">0</div><div class="label">Dependencies</div></div>
+    <div class="stat"><div class="num">∞</div><div class="label">Equations</div></div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-inner">
+    <div class="section-eyebrow">Why ML Lab</div>
+    <h2 class="section-title">Built for understanding.</h2>
+    <p class="section-sub">Every detail is designed to make abstract ML concepts visible, tangible, and intuitive.</p>
+    <div class="features">
+      <div class="feature">
+        <div class="icon" style="background:linear-gradient(135deg,rgba(215,168,95,0.2),rgba(242,201,120,0.1));color:var(--gold-2)">ƒ</div>
+        <h3>Equation-driven data</h3>
+        <p>Type any math function — sin(x), x³, exp(−x²)·cos(4x) — and watch the model train on data sampled from your equation.</p>
+      </div>
+      <div class="feature">
+        <div class="icon" style="background:linear-gradient(135deg,rgba(155,121,184,0.2),rgba(184,157,214,0.1));color:var(--violet)">⟶</div>
+        <h3>Live training animation</h3>
+        <p>See stochastic gradient descent step-by-step. Watch weights update, loss decrease, and predictions improve in real time.</p>
+      </div>
+      <div class="feature">
+        <div class="icon" style="background:linear-gradient(135deg,rgba(184,215,173,0.2),rgba(155,121,184,0.1));color:var(--green)">◐</div>
+        <h3>3D loss surfaces</h3>
+        <p>Drag to rotate the weight-bias loss landscape. Watch gradient descent walk down the surface toward the minimum.</p>
+      </div>
+      <div class="feature">
+        <div class="icon" style="background:linear-gradient(135deg,rgba(217,143,130,0.2),rgba(215,168,95,0.1));color:var(--red)">⊕</div>
+        <h3>Two data sources</h3>
+        <p>Every demo ships with built-in datasets (original behavior) plus an equation mode — toggle freely, no features lost.</p>
+      </div>
+      <div class="feature">
+        <div class="icon" style="background:linear-gradient(135deg,rgba(6,182,212,0.2),rgba(155,121,184,0.1));color:var(--cyan)">◈</div>
+        <h3>Zero dependencies</h3>
+        <p>Pure HTML, CSS, vanilla JavaScript. No build step, no npm, no internet. Just open the file and it works.</p>
+      </div>
+      <div class="feature">
+        <div class="icon" style="background:linear-gradient(135deg,rgba(242,201,120,0.2),rgba(215,168,95,0.1));color:var(--gold-2)">⌘</div>
+        <h3>Universal approximator</h3>
+        <p>Watch the MLP neural network fit ANY function — sine, polynomial, wavelet, even sin(x²). The lesson: neural nets can mimic anything.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMOS -->
+<section id="demos" style="background:linear-gradient(180deg,var(--bg) 0%,var(--bg-2) 100%)">
+  <div class="section-inner">
+    <div class="section-eyebrow">The collection</div>
+    <h2 class="section-title">Six algorithms. One lab.</h2>
+    <p class="section-sub">Each demo is a self-contained file. Open any one to explore that algorithm in depth.</p>
+    <div class="demos-grid">
+
+      <a class="demo-card" data-color="gold" href="linear_regression.html">
+        <div class="preview"><div class="glyph">y = wx + b</div><div class="badge">3 views</div></div>
+        <div class="body">
+          <div class="num">01 — Regression</div>
+          <h3>Linear Regression</h3>
+          <p class="desc">Polynomial gradient descent. Try fitting sin(x) with a straight line — watch it fail. The lesson: linear models can't bend.</p>
+          <div class="tags"><span class="tag">SGD</span><span class="tag">MSE</span><span class="tag">3D loss</span></div>
+          <span class="open">Open demo</span>
+        </div>
+      </a>
+
+      <a class="demo-card" data-color="violet" href="logistic.html">
+        <div class="preview"><div class="glyph">σ(z)</div><div class="badge">3 views</div></div>
+        <div class="body">
+          <div class="num">02 — Classification</div>
+          <h3>Logistic Regression</h3>
+          <p class="desc">Sigmoid + binary cross-entropy. Adjustable threshold slider moves the decision boundary live.</p>
+          <div class="tags"><span class="tag">BCE</span><span class="tag">Sigmoid</span><span class="tag">Threshold</span></div>
+          <span class="open">Open demo</span>
+        </div>
+      </a>
+
+      <a class="demo-card" data-color="green" href="knn.html">
+        <div class="preview"><div class="glyph">K-NN</div><div class="badge">4 views</div></div>
+        <div class="body">
+          <div class="num">03 — Instance-based</div>
+          <h3>K-Nearest Neighbors</h3>
+          <p class="desc">No SGD, no weights — yet learns boundaries from stored points. Includes an honest "Why No SGD" view.</p>
+          <div class="tags"><span class="tag">Euclidean</span><span class="tag">Voting</span><span class="tag">LOO-CV</span></div>
+          <span class="open">Open demo</span>
+        </div>
+      </a>
+
+      <a class="demo-card" data-color="red" href="svm.html">
+        <div class="preview"><div class="glyph">SVM</div><div class="badge">5 views</div></div>
+        <div class="body">
+          <div class="num">04 — Maximum margin</div>
+          <h3>Support Vector Machine</h3>
+          <p class="desc">Hinge loss + subgradient descent. C-sweep analysis trains 8 SVMs at once. Test hook included.</p>
+          <div class="tags"><span class="tag">Hinge</span><span class="tag">Margin</span><span class="tag">C-sweep</span></div>
+          <span class="open">Open demo</span>
+        </div>
+      </a>
+
+      <a class="demo-card" data-color="cyan" href="mlp.html">
+        <div class="preview"><div class="glyph">MLP</div><div class="badge">5 views</div></div>
+        <div class="body">
+          <div class="num">05 — Neural network</div>
+          <h3>MLP Neural Network</h3>
+          <p class="desc">Full backprop, 1–4 hidden layers, tanh/ReLU/sigmoid. The universal approximator — fits ANY function.</p>
+          <div class="tags"><span class="tag">Backprop</span><span class="tag">Universal</span><span class="tag">3D loss</span></div>
+          <span class="open">Open demo</span>
+        </div>
+      </a>
+
+      <a class="demo-card" data-color="gold2" href="decision_tree.html">
+        <div class="preview"><div class="glyph">CART</div><div class="badge">5 views</div></div>
+        <div class="body">
+          <div class="num">06 — Tree models</div>
+          <h3>Decision Tree</h3>
+          <p class="desc">Standard CART (Gini/entropy) plus a real differentiable soft-tree trained by SGD. Two models in one.</p>
+          <div class="tags"><span class="tag">Gini</span><span class="tag">Soft-tree</span><span class="tag">SGD</span></div>
+          <span class="open">Open demo</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="section-inner">
+    <div class="section-eyebrow">Getting started</div>
+    <h2 class="section-title">From equation to insight<br>in four steps.</h2>
+    <p class="section-sub">No setup, no install. Just open and learn.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="num-circle">1</div>
+        <h4>Open any demo</h4>
+        <p>Click a demo card above. It opens in your browser instantly — no server, no build, no internet needed.</p>
+      </div>
+      <div class="step">
+        <div class="num-circle">2</div>
+        <h4>Switch to Equation-driven</h4>
+        <p>Use the Data Source toggle at the top of the sidebar. Built-in data is the default; Equation-driven is one click away.</p>
+      </div>
+      <div class="step">
+        <div class="num-circle">3</div>
+        <h4>Type your equation</h4>
+        <p>Enter any math expression — sin(x), x^2 - 4, exp(-x^2)*cos(4*x). Use ^ for powers, * for multiply, pi and e as constants.</p>
+      </div>
+      <div class="step">
+        <div class="num-circle">4</div>
+        <h4>Press Play</h4>
+        <p>Watch the model train. The gold dashed curve is your equation; the purple curve is the model's attempt to mimic it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EQUATIONS -->
+<section id="equations" style="background:linear-gradient(180deg,var(--bg-2) 0%,var(--bg) 100%)">
+  <div class="section-inner">
+    <div class="section-eyebrow">Try these</div>
+    <h2 class="section-title">Equations to explore.</h2>
+    <p class="section-sub">A starting point. Type any of these into the equation box to see different concepts come alive.</p>
+    <div class="eq-showcase">
+      <div class="eq-card">
+        <div class="label">1D Regression</div>
+        <div class="eq">sin(x)</div>
+        <div class="desc">MLP fits perfectly. Linear fails — it can only draw straight lines.</div>
+      </div>
+      <div class="eq-card">
+        <div class="label">Polynomial</div>
+        <div class="eq">x^3 - 2*x</div>
+        <div class="desc">Cubic function. Watch MLP bend to match the curve.</div>
+      </div>
+      <div class="eq-card">
+        <div class="label">Wavelet</div>
+        <div class="eq">exp(-x^2)*cos(4*x)</div>
+        <div class="desc">Highly non-linear. Only MLP can fit this.</div>
+      </div>
+      <div class="eq-card">
+        <div class="label">Chirp</div>
+        <div class="eq">sin(x^2)</div>
+        <div class="desc">Frequency increases with x. Tests MLP's universal approximation.</div>
+      </div>
+      <div class="eq-card">
+        <div class="label">2D Boundary</div>
+        <div class="eq">y - sin(5*x) > 0</div>
+        <div class="desc">For KNN/SVM/Decision Tree. Sine-wave class boundary.</div>
+      </div>
+      <div class="eq-card">
+        <div class="label">Ring</div>
+        <div class="eq">x^2 + y^2 - 0.3 > 0</div>
+        <div class="desc">Donut-shaped class region. Linear SVM will struggle.</div>
+      </div>
+      <div class="eq-card">
+        <div class="label">Checkerboard</div>
+        <div class="eq">sin(x*5)*cos(y*5) > 0</div>
+        <div class="desc">Complex 2D pattern. Decision Tree handles it well.</div>
+      </div>
+      <div class="eq-card">
+        <div class="label">Diamond</div>
+        <div class="eq">abs(x-0.5)+abs(y-0.5)-0.3 > 0</div>
+        <div class="desc">L1-norm boundary. CART's axis-aligned splits fit naturally.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="links">
+    <a href="linear_regression.html">Linear</a>
+    <a href="logistic.html">Logistic</a>
+    <a href="knn.html">KNN</a>
+    <a href="svm.html">SVM</a>
+    <a href="mlp.html">MLP</a>
+    <a href="decision_tree.html">Decision Tree</a>
+  </div>
+  <div class="copyright">Built with vanilla JS · Canvas 2D · zero dependencies</div>
+</footer>
+
+</body>
+</html>

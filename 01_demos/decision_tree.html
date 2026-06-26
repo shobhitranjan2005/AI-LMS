@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decision Tree</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --window-bg:#1e1e1e;
+    --toolbar-bg:rgba(50,50,52,0.6);
+    --sidebar-bg:rgba(38,38,40,0.6);
+    --canvas-bg:#232325;
+    --separator:rgba(255,255,255,0.08);
+    --separator-strong:rgba(255,255,255,0.12);
+    --label:#ffffff;
+    --secondary-label:#8e8e93;
+    --tertiary-label:#48484a;
+    --accent:#d7a85f;
+    --accent-bright:#f2c978;
+    --violet:#9b79b8;
+    --green:#b8d7ad;
+    --red:#d98f82;
+    --blue:#5b9dd9;
+    --traffic-red:#ff5f57;
+    --traffic-yellow:#febc2e;
+    --traffic-green:#28c840;
+  }
+  html,body{
+    height:100%;overflow:hidden;
+    background:#0a0a0a;
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    color:var(--label);
+    user-select:none;
+  }
+  .window{
+    position:absolute;
+    inset:0;
+    background:var(--window-bg);
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 0 0 1px rgba(0,0,0,0.5), 0 20px 60px rgba(0,0,0,0.5);
+    display:flex;
+    flex-direction:column;
+  }
+  .toolbar{
+    height:52px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:0 12px;
+    background:var(--toolbar-bg);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:1px solid var(--separator);
+    position:relative;
+    z-index:20;
+  }
+  .nav-back{
+    display:flex;align-items:center;gap:3px;
+    color:var(--accent-bright);text-decoration:none;
+    font-size:13px;font-weight:500;
+    padding:4px 8px 4px 4px;
+    border-radius:6px;
+    transition:background 0.15s;
+  }
+  .nav-back:hover{background:rgba(255,255,255,0.06)}
+  .nav-back svg{width:12px;height:12px}
+  .window-title{
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    color:var(--label);
+    min-width:0;
+  }
+  .toolbar-spacer{flex:1}
+  .eq-field{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:rgba(0,0,0,0.3);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:4px 10px;
+    min-width:200px;
+    cursor:text;
+    transition:border-color 0.15s;
+  }
+  .eq-field:hover{border-color:var(--separator-strong)}
+  .eq-field .eq-prefix{
+    font-size:12px;
+    color:var(--accent-bright);
+    font-family:'SF Mono',ui-monospace,monospace;
+    font-weight:500;
+  }
+  .eq-field .eq-text{
+    font-size:12px;
+    color:var(--secondary-label);
+    font-family:'SF Mono',ui-monospace,monospace;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .eq-field .eq-text.active{color:var(--label)}
+  .segmented{
+    display:flex;
+    background:rgba(0,0,0,0.3);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:1px;
+    overflow:hidden;
+  }
+  .segmented button{
+    padding:4px 12px;
+    font-size:11px;
+    font-weight:500;
+    border:none;
+    background:transparent;
+    color:var(--secondary-label);
+    cursor:pointer;
+    transition:all 0.15s;
+    font-family:inherit;
+    border-radius:5px;
+  }
+  .segmented button:hover{color:var(--label)}
+  .segmented button.active{
+    background:rgba(255,255,255,0.12);
+    color:var(--label);
+    box-shadow:0 1px 2px rgba(0,0,0,0.2);
+  }
+  .toolbar-btn{
+    width:28px;height:28px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:6px;border:none;cursor:pointer;
+    background:transparent;color:var(--secondary-label);
+    transition:all 0.15s;
+  }
+  .toolbar-btn:hover{background:rgba(255,255,255,0.08);color:var(--label)}
+  .toolbar-btn:active{background:rgba(255,255,255,0.15)}
+  .toolbar-btn svg{width:15px;height:15px}
+  .canvas-area{
+    flex:1;
+    position:relative;
+    background:var(--canvas-bg);
+    overflow:hidden;
+  }
+  #c{
+    display:block;
+    width:100%;
+    height:100%;
+  }
+  .statusbar{
+    height:24px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    padding:0 12px;
+    gap:16px;
+    background:var(--toolbar-bg);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-top:1px solid var(--separator);
+    font-size:11px;
+    color:var(--secondary-label);
+  }
+  .statusbar .status-item{display:flex;align-items:center;gap:4px;}
+  .statusbar .status-item .label{color:var(--tertiary-label)}
+  .statusbar .status-item .value{
+    color:var(--secondary-label);
+    font-family:'SF Mono',ui-monospace,monospace;
+  }
+  .statusbar .status-spacer{flex:1}
+  .statusbar .status-dot{
+    width:7px;height:7px;
+    border-radius:50%;
+    background:var(--tertiary-label);
+  }
+  .statusbar .status-dot.live{
+    background:var(--green);
+    box-shadow:0 0 6px rgba(184,215,173,0.5);
+  }
+  .statusbar .status-dot.paused{background:var(--accent-bright)}
+  .statusbar .status-dot.done{background:var(--accent)}
+  .statusbar .status-text{
+    color:var(--secondary-label);
+    font-weight:500;
+  }
+  .sheet-backdrop{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,0.3);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.25s;
+    z-index:30;
+  }
+  .sheet-backdrop.show{
+    opacity:1;
+    pointer-events:auto;
+  }
+  .sheet{
+    position:absolute;
+    top:52px;
+    left:50%;
+    transform:translateX(-50%) translateY(-20px);
+    width:560px;
+    max-width:calc(100% - 32px);
+    background:rgba(44,44,46,0.95);
+    backdrop-filter:saturate(180%) blur(40px);
+    -webkit-backdrop-filter:saturate(180%) blur(40px);
+    border:1px solid var(--separator-strong);
+    border-radius:12px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+    opacity:0;
+    pointer-events:none;
+    transition:all 0.25s cubic-bezier(0.32,0.72,0,1);
+    z-index:40;
+    overflow:hidden;
+  }
+  .sheet.show{
+    opacity:1;
+    pointer-events:auto;
+    transform:translateX(-50%) translateY(0);
+  }
+  .sheet-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 18px;
+    border-bottom:1px solid var(--separator);
+  }
+  .sheet-title{
+    font-size:13px;
+    font-weight:600;
+    color:var(--label);
+  }
+  .sheet-close{
+    width:20px;height:20px;
+    border-radius:4px;border:none;
+    background:transparent;color:var(--secondary-label);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .sheet-close:hover{background:rgba(255,255,255,0.1);color:var(--label)}
+  .sheet-close svg{width:10px;height:10px}
+  .sheet-body{
+    padding:18px;
+    max-height:60vh;
+    overflow-y:auto;
+  }
+  .sheet-section{margin-bottom:20px}
+  .sheet-section:last-child{margin-bottom:0}
+  .sheet-label{
+    font-size:11px;
+    font-weight:600;
+    color:var(--secondary-label);
+    margin-bottom:8px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  .sheet .segmented{width:100%;}
+  .sheet .segmented button{
+    flex:1;
+    padding:6px;
+    font-size:12px;
+  }
+  .sheet .eq-input{
+    display:flex;align-items:center;gap:8px;
+    background:rgba(0,0,0,0.4);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:6px 10px;
+    margin-bottom:10px;
+    transition:border-color 0.15s;
+  }
+  .sheet .eq-input:focus-within{border-color:var(--accent)}
+  .sheet .eq-input .prefix{
+    font-size:13px;font-weight:500;color:var(--accent-bright);
+    font-family:'SF Mono',monospace;
+  }
+  .sheet .eq-input input{
+    flex:1;background:none;border:none;outline:none;
+    font-size:13px;color:var(--label);
+    font-family:'SF Mono',monospace;
+  }
+  .preset-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(70px,1fr));
+    gap:4px;
+    margin-bottom:10px;
+  }
+  .preset{
+    padding:5px;border-radius:5px;
+    font-size:10px;font-family:'SF Mono',monospace;
+    background:rgba(0,0,0,0.3);
+    border:1px solid var(--separator);
+    color:var(--secondary-label);cursor:pointer;
+    transition:all 0.15s;text-align:center;
+  }
+  .preset:hover{
+    background:rgba(215,168,95,0.1);color:var(--accent-bright);
+    border-color:rgba(215,168,95,0.3);
+  }
+  .control-row{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:4px;
+  }
+  .control-row .name{font-size:12px;color:var(--secondary-label)}
+  .control-row .value{
+    font-size:12px;font-weight:500;color:var(--label);
+    font-family:'SF Mono',monospace;
+  }
+  input[type=range]{
+    width:100%;height:4px;
+    -webkit-appearance:none;appearance:none;
+    background:rgba(255,255,255,0.1);
+    border-radius:2px;outline:none;
+    margin-bottom:12px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:14px;height:14px;
+    border-radius:50%;
+    background:#fff;
+    cursor:pointer;
+    box-shadow:0 1px 3px rgba(0,0,0,0.3);
+  }
+  input[type=number]{
+    width:100%;
+    background:rgba(0,0,0,0.4);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:5px 8px;
+    font-size:12px;color:var(--label);
+    font-family:monospace;
+    margin-bottom:10px;outline:none;
+  }
+  select{
+    width:100%;
+    background:rgba(0,0,0,0.4);
+    border:1px solid var(--separator);
+    border-radius:6px;
+    padding:5px 24px 5px 8px;
+    font-size:12px;color:var(--label);
+    cursor:pointer;outline:none;appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238e8e93' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 6px center;
+  }
+  .eq-status{
+    font-size:11px;
+    font-family:'SF Mono',monospace;
+    padding:6px 8px;
+    border-radius:5px;
+    margin-bottom:8px;
+    word-break:break-all;
+  }
+  .eq-status.ok{background:rgba(184,215,173,0.08);color:var(--green)}
+  .eq-status.error{background:rgba(217,143,130,0.08);color:var(--red)}
+  .eq-status.inactive{background:rgba(255,255,255,0.04);color:var(--tertiary-label)}
+  .btn-primary{
+    width:100%;
+    background:var(--accent);
+    color:#1a1209;font-weight:600;
+    border:none;border-radius:6px;
+    padding:8px;font-size:13px;
+    cursor:pointer;transition:all 0.15s;
+    font-family:inherit;
+  }
+  .btn-primary:hover{background:var(--accent-bright)}
+  .btn-primary:active{transform:scale(0.98)}
+  .hint{
+    font-size:11px;color:var(--tertiary-label);
+    line-height:1.4;margin-top:6px;
+  }
+  .eq-section.disabled{
+    opacity:0.4;
+    pointer-events:none;
+  }
+  .compat{display:none}
+  @media(max-width:700px){
+    .eq-field{display:none}
+    .window-title{font-size:12px}
+  }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="emergence-theme.css">
+</head>
+<body>
+
+<div class="window">
+
+  <div class="toolbar">
+    <a href="index.html" class="nav-back" title="Back to ML Lab">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M10 3L5 8l5 5V3z"/></svg>
+      <span>ML Lab</span>
+    </a>
+    <div class="window-title">Decision Tree</div>
+
+    <div class="eq-field" id="eqField" title="Click to customize">
+      <span class="eq-prefix">class 1 if</span>
+      <span class="eq-text" id="eqDisplay">x − y &gt; 0 (built-in XOR)</span>
+    </div>
+
+    <div class="toolbar-spacer"></div>
+
+    <div class="segmented" id="viewControl">
+      <button class="active" data-mode="regions">Regions</button>
+      <button data-mode="split">Split</button>
+      <button data-mode="tree">Tree</button>
+      <button data-mode="soft">Soft Tree</button>
+      <button data-mode="surface">Surface</button>
+    </div>
+
+    <button class="toolbar-btn" id="playBtn" title="Play">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l9 5-9 5V3z"/></svg>
+    </button>
+    <button class="toolbar-btn" id="stepBtn" title="Step">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l7 5-7 5V3zm9 0h2v10h-2z"/></svg>
+    </button>
+    <button class="toolbar-btn" id="resetBtn" title="Reset">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 3a5 5 0 100 10 5 5 0 000-10zm0-2L5 4l3 3V1z"/></svg>
+    </button>
+
+    <button class="toolbar-btn" id="settingsBtn" title="Customize">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 6a2 2 0 100 4 2 2 0 000-4zm0-4l1 2h2l-1.5 1.5L11 8l-2-1-1-2-1 2-2 1 1.5-1.5L5 4h2l1-2z"/></svg>
+    </button>
+  </div>
+
+  <div class="canvas-area">
+    <canvas id="c"></canvas>
+  </div>
+
+  <div class="statusbar">
+    <div class="status-item">
+      <span class="label">Tree:</span>
+      <span class="value" id="sModel">XOR · Gini · depth 4</span>
+    </div>
+    <div class="status-item">
+      <span class="label">Splits:</span>
+      <span class="value" id="sEpoch">0/0</span>
+    </div>
+    <div class="status-item">
+      <span class="label">Train:</span>
+      <span class="value" id="sLoss">—</span>
+    </div>
+    <div class="status-item">
+      <span class="label">Test:</span>
+      <span class="value" id="sAcc">—</span>
+    </div>
+    <div class="status-spacer"></div>
+    <div class="status-dot" id="sDot"></div>
+    <span class="status-text" id="sStatus">Idle</span>
+  </div>
+
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="sheet" id="sheet">
+    <div class="sheet-header">
+      <div class="sheet-title">Customize</div>
+      <button class="sheet-close" id="sheetClose">
+        <svg viewBox="0 0 12 12" fill="currentColor"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+
+      <div class="sheet-section">
+        <div class="sheet-label">Data Source</div>
+        <div class="segmented" id="sourceToggle">
+          <button class="active" data-source="original">Built-in data</button>
+          <button data-source="equation">Equation-driven</button>
+        </div>
+      </div>
+
+      <div class="sheet-section eq-section disabled" id="eqSection">
+        <div class="sheet-label">Equation — class 1 if equation &gt; 0</div>
+        <div class="eq-input">
+          <span class="prefix">class 1 if</span>
+          <input id="eqInput" type="text" placeholder="x - y" value="x - y">
+          <span class="prefix">&gt; 0</span>
+        </div>
+        <div class="preset-grid">
+          <button class="preset" data-eq="x - y">x−y&gt;0</button>
+          <button class="preset" data-eq="y - sin(5*x)">y−sin5x&gt;0</button>
+          <button class="preset" data-eq="sin(3*x) - y">sin3x−y&gt;0</button>
+          <button class="preset" data-eq="x^2 + y^2 - 0.4">circle</button>
+          <button class="preset" data-eq="(x-0.5)^2 + (y-0.5)^2 - 0.15">ring</button>
+          <button class="preset" data-eq="x*y - 0.2">x·y&gt;0.2</button>
+          <button class="preset" data-eq="abs(x-y) - 0.3">|x−y|&gt;0.3</button>
+          <button class="preset" data-eq="sin(4*x)*cos(4*y)">sin·cos</button>
+          <button class="preset" data-eq="2*x + 3*y - 2">2x+3y&gt;2</button>
+        </div>
+        <div class="control-row">
+          <span class="name">Samples</span>
+          <span class="value" id="samplesVal">120</span>
+        </div>
+        <input type="number" id="eqSamples" min="20" max="500" value="120" step="10">
+        <div class="control-row">
+          <span class="name">Label Noise</span>
+          <span class="value" id="noiseVal">5%</span>
+        </div>
+        <input type="range" id="eqNoise" min="0" max="0.3" step="0.01" value="0.05">
+        <div class="eq-status inactive" id="eqStatus">Inactive — switch to Equation-driven</div>
+        <button class="btn-primary" id="eqApply">Generate from equation</button>
+        <div class="hint">CART trees partition the plane with axis-aligned splits. They can fit any boundary given enough depth.</div>
+      </div>
+
+      <div class="sheet-section">
+        <div class="sheet-label">Dataset (built-in)</div>
+        <select id="dataset">
+          <option value="xor" selected>XOR quadrants</option>
+          <option value="zones">Zones</option>
+          <option value="spiral">Spiral</option>
+        </select>
+        <div class="control-row">
+          <span class="name">Cluster Noise (σ)</span>
+          <span class="value" id="noiseBuiltInVal">0.080</span>
+        </div>
+        <input type="range" id="noise" min="0.02" max="0.2" step="0.01" value="0.08">
+      </div>
+
+      <div class="sheet-section">
+        <div class="sheet-label">Tree Parameters</div>
+        <div class="control-row">
+          <span class="name">Max Depth</span>
+          <span class="value" id="depthVal">4</span>
+        </div>
+        <input type="range" id="depth" min="1" max="8" step="1" value="4">
+        <div class="control-row">
+          <span class="name">Min Leaf Size</span>
+          <span class="value" id="minLeafVal">5</span>
+        </div>
+        <input type="range" id="minLeaf" min="1" max="20" step="1" value="5">
+        <div class="control-row">
+          <span class="name">Criterion</span>
+          <span class="value" id="criterionVal">Gini</span>
+        </div>
+        <select id="criterion">
+          <option value="gini" selected>Gini impurity</option>
+          <option value="entropy">Entropy</option>
+        </select>
+      </div>
+
+      <div class="sheet-section">
+        <div class="sheet-label">Soft-Tree Training</div>
+        <div class="control-row">
+          <span class="name">Learning Rate</span>
+          <span class="value" id="lrVal">0.150</span>
+        </div>
+        <input type="range" id="lr" min="0.01" max="0.5" step="0.01" value="0.15">
+        <div class="control-row">
+          <span class="name">Soft Epochs</span>
+          <span class="value" id="softEpochsVal">10</span>
+        </div>
+        <input type="range" id="softEpochs" min="1" max="40" step="1" value="10">
+        <div class="control-row">
+          <span class="name">Speed</span>
+          <span class="value" id="speedVal">Slow</span>
+        </div>
+        <select id="speed">
+          <option value="1200">Very slow</option>
+          <option value="800" selected>Slow</option>
+          <option value="450">Normal</option>
+          <option value="220">Fast</option>
+          <option value="2.2">Ultra Fast (100×)</option>
+        </select>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="compat" id="note"></div>
+<div class="compat" id="badge"></div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const c=$('c'),ctx=c.getContext('2d');
+const datasetEl=$('dataset'),noiseEl=$('noise'),depthEl=$('depth'),minLeafEl=$('minLeaf'),criterionEl=$('criterion'),lrEl=$('lr'),softEpochsEl=$('softEpochs'),speedEl=$('speed');
+let mode='regions',train=[],test=[],seed=12345;
+let root=null,splitSeq=[],applied=0,scanStep=0,nodeId=0,treePlaying=false;
+let regionCache=null,regionKey='';
+let soft=null,softOld=null,softNew=null,softGrads=null,softOrder=[],softCursor=0,softEpoch=0,softActive=-1,softPhase='idle',softPhaseT=0,softPlaying=false,softCache=null,softLossHistory=[];
+let paused=false,lastTime=0,accum=0,raf=null,rotX=-.58,rotY=.72,zoom=1,drag=false,lastPX=0,lastPY=0,surfaceCache=null,surfaceDirty=true,lastSurfaceBuild=0;
+
+let currentEq=null,currentEqStr='x - y';
+let dataSource='original';
+function parseEquation(input){
+  let expr=(input||'').trim().toLowerCase();
+  if(!expr)return null;
+  expr=expr.replace(/^class\s+[+-]?\d+\s+if\s+/,'');
+  expr=expr.replace(/\s*>\s*=?\s*0\s*$/,'');
+  expr=expr.replace(/^y\s*=\s*/,'');
+  expr=expr.replace(/\^/g,'**');
+  expr=expr.replace(/(\d)\s*x/g,'$1*x');
+  expr=expr.replace(/(\d)\s*y/g,'$1*y');
+  ['sin','cos','tan','exp','log','sqrt','abs','sinh','cosh','tanh','atan','asin','acos','atan2','floor','ceil','sign'].forEach(fn=>{expr=expr.replace(new RegExp('\\b'+fn+'\\b','g'),'Math.'+fn);});
+  expr=expr.replace(/\bpi\b/g,'Math.PI');expr=expr.replace(/\be(?!xp)/g,'Math.E');
+  try{const fn=new Function('x','y','return '+expr);const test=fn(1,1);if(typeof test!=='number'||!isFinite(test))return null;return fn;}catch(e){return null;}
+}
+function applyEquation(){
+  const input=$('eqInput').value;const fn=parseEquation(input);const status=$('eqStatus');
+  if(fn){currentEq=fn;currentEqStr=input.trim();status.textContent='Active: class 1 if '+currentEqStr+' > 0';status.className='eq-status ok';updateEqDisplay();generateData();fullReset();}
+  else{status.textContent='Error: cannot parse "'+input+'"';status.className='eq-status error';}
+}
+function updateEqDisplay(){
+  const disp=$('eqDisplay');
+  if(dataSource==='equation'&&currentEq){disp.textContent=currentEqStr+' > 0';disp.classList.add('active');}
+  else{disp.textContent='XOR (built-in)';disp.classList.remove('active');}
+}
+function setDataSource(source){
+  dataSource=source;
+  document.querySelectorAll('#sourceToggle button').forEach(btn=>btn.classList.toggle('active',btn.dataset.source===source));
+  const eqSection=$('eqSection');
+  if(source==='equation'){eqSection.classList.remove('disabled');applyEquation();}
+  else{eqSection.classList.add('disabled');$('eqStatus').textContent='Inactive — switch to Equation-driven';$('eqStatus').className='eq-status inactive';updateEqDisplay();generateData();fullReset();}
+}
+function getEqSamples(){return parseInt($('eqSamples')?.value)||120;}
+function getEqNoise(){const v=parseFloat($('eqNoise')?.value);return isNaN(v)?0.05:v;}
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}function map(v,a,b,c,d){return c+(v-a)*(d-c)/(b-a)}function ease(t){return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2}
+function makeRng(s){let x=s>>>0;return()=>{x=(1664525*x+1013904223)>>>0;return x/4294967296}}
+function gaussian(rng){let u=0,v=0;while(!u)u=rng();while(!v)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function sampleCluster(rng,cx,cy,sigma,cls,n,target){for(let i=0;i<n;i++){let x,y,tries=0;do{x=cx+gaussian(rng)*sigma;y=cy+gaussian(rng)*sigma;tries++}while((x<.04||x>.96||y<.04||y>.96)&&tries<40);target.push({x:clamp(x,.04,.96),y:clamp(y,.04,.96),cls})}}
+function generateData(){
+  const rng=makeRng(seed);
+  train=[];test=[];
+  if(dataSource==='equation'&&currentEq){
+    const N=getEqSamples();const noiseFraction=getEqNoise();
+    const all=[];
+    for(let i=0;i<N;i++){
+      const x=0.04+0.92*rng();
+      const y=0.04+0.92*rng();
+      try{
+        const val=currentEq(x,y);
+        let cls=val>0?1:0;
+        if(rng()<noiseFraction)cls=1-cls;
+        all.push({x,y,cls});
+      }catch(e){}
+    }
+    const trainCount=Math.floor(all.length*2/3);
+    train=all.slice(0,trainCount);
+    test=all.slice(trainCount);
+  }else{
+    const noise=+noiseEl.value;
+    const add=(cx,cy,cls)=>{
+      sampleCluster(rng,cx,cy,noise,cls,20,train);
+      sampleCluster(rng,cx,cy,noise*1.05,cls,10,test);
+    };
+    if(datasetEl.value==='xor'){add(.25,.25,0);add(.75,.75,0);add(.25,.75,1);add(.75,.25,1)}
+    else if(datasetEl.value==='zones'){add(.20,.30,0);add(.52,.72,1);add(.82,.28,0);add(.82,.75,1)}
+    else{
+      // spiral
+      const old=+noiseEl.value;
+      const s=Math.max(.10,old);
+      sampleCluster(rng,.27,.27,s,0,20,train);
+      sampleCluster(rng,.73,.73,s,0,20,train);
+      sampleCluster(rng,.27,.73,s,1,20,train);
+      sampleCluster(rng,.73,.27,s,1,20,train);
+      sampleCluster(rng,.27,.27,s*1.05,0,10,test);
+      sampleCluster(rng,.73,.73,s*1.05,0,10,test);
+      sampleCluster(rng,.27,.73,s*1.05,1,10,test);
+      sampleCluster(rng,.73,.27,s*1.05,1,10,test);
+    }
+  }
+  regionCache=null;
+  surfaceDirty=true;
+}
+function impurity(a,b){
+  const n=a+b;
+  if(!n)return 0;
+  const p0=a/n,p1=b/n;
+  if(criterionEl.value==='entropy'){
+    const h=p=>p<=0?0:-p*Math.log2(p);
+    return h(p0)+h(p1)
+  }return 1-p0*p0-p1*p1
+}
+function counts(indices){
+  let a=0,b=0;
+  for(const i of indices)train[i].cls===0?a++:b++;
+  return{a,b}
+}
+function makeNode(indices,depth,bounds){
+  const ct=counts(indices);
+  return{
+    id:nodeId++,indices,depth,bounds,counts:ct,p1:ct.b/(ct.a+ct.b||1),pred:ct.b>ct.a?1:0,impurity:impurity(ct.a,ct.b),split:null,left:null,right:null,seqIndex:-1,candidates:[]
+  }
+}
+function candidatesFor(indices){
+  const pc=counts(indices),parent=impurity(pc.a,pc.b),minLeaf=+minLeafEl.value,out=[];
+  for(const feature of ['x','y']){
+    const sorted=[...indices].sort((i,j)=>train[i][feature]-train[j][feature]);
+    for(let k=1;k<sorted.length;k++){
+      const v1=train[sorted[k-1]][feature],v2=train[sorted[k]][feature];
+      if(Math.abs(v1-v2)<1e-9)continue;
+      const left=sorted.slice(0,k),right=sorted.slice(k);
+      if(left.length<minLeaf||right.length<minLeaf)continue;
+      const lc=counts(left),rc=counts(right),li=impurity(lc.a,lc.b),ri=impurity(rc.a,rc.b),score=(left.length*li+right.length*ri)/indices.length;
+      out.push({feature,threshold:(v1+v2)/2,left,right,li,ri,score,gain:parent-score})
+    }
+  }out.sort((a,b)=>b.gain-a.gain);
+  return out
+}
+function buildTree(){
+  nodeId=0;
+  splitSeq=[];
+  root=makeNode([...Array(train.length).keys()],0,{xmin:0,xmax:1,ymin:0,ymax:1});
+  function grow(node){
+    if(node.depth>=+depthEl.value||node.impurity<1e-10||node.indices.length<2*(+minLeafEl.value))return;
+    node.candidates=candidatesFor(node.indices);
+    const best=node.candidates[0];
+    if(!best||best.gain<1e-6)return;
+    node.split=best;
+    node.seqIndex=splitSeq.length;
+    splitSeq.push(node);
+    const lb={...node.bounds},rb={...node.bounds};
+    if(best.feature==='x'){lb.xmax=best.threshold;rb.xmin=best.threshold}
+    else{lb.ymax=best.threshold;rb.ymin=best.threshold}
+    node.left=makeNode(best.left,node.depth+1,lb);
+    node.right=makeNode(best.right,node.depth+1,rb);
+    grow(node.left);
+    grow(node.right)
+  }grow(root)
+}
+function rebuildTree(){
+  buildTree();
+  applied=0;
+  scanStep=0;
+  treePlaying=false;
+  regionCache=null;
+  updateStatus();
+  draw()
+}
+function isApplied(n,k=applied){
+  return !!(n&&n.split&&n.seqIndex<k)
+}
+function leafFor(q,k=applied,n=root){
+  while(n&&isApplied(n,k))n=q[n.split.feature]<=n.split.threshold?n.left:n.right;
+  return n
+}
+function predictTree(q,k=applied){
+  const n=leafFor(q,k);
+  return n?n.pred:0
+}
+function accuracy(dataSet,k=applied){
+  let ok=0;
+  for(const p of dataSet)if(predictTree(p,k)===p.cls)ok++;
+  return ok/dataSet.length
+}
+function currentNode(){
+  return splitSeq[applied]||null
+}
+function scanSequence(node){
+  if(!node||!node.candidates.length)return[];
+  const result=[];
+  for(const f of ['x','y']){
+    const arr=node.candidates.filter(v=>v.feature===f).sort((a,b)=>a.threshold-b.threshold);
+    const n=Math.min(6,arr.length);
+    for(let i=0;i<n;i++){
+      const idx=n===1?0:Math.round(i*(arr.length-1)/(n-1));
+      if(!result.includes(arr[idx]))result.push(arr[idx])
+    }
+  }const best=node.candidates[0];
+  if(result[result.length-1]!==best)result.push(best);
+  return result
+}
+function currentCandidate(){
+  const arr=scanSequence(currentNode());
+  return arr.length?arr[Math.min(scanStep,arr.length-1)]:null
+}
+function nextTreeStep(){
+  const n=currentNode();
+  if(!n){
+    treePlaying=false;
+    draw();
+    return
+  }const seq=scanSequence(n);
+  if(scanStep<seq.length-1)scanStep++;
+  else{
+    applied++;
+    scanStep=0;
+    regionCache=null
+  }draw()
+}
+// Differentiable 2-level soft tree: 3 gates + 4 leaf logits.
+function initSoft(){
+  soft={
+    gates:[{w1:1.2,w2:0,b:0},{w1:0,w2:1.2,b:0},{w1:0,w2:1.2,b:0}],
+    leaf:[-.7,.2,.2,-.1]
+  };
+  softOld=null;
+  softNew=null;
+  softGrads=null;
+  softCursor=0;
+  softEpoch=0;
+  softActive=-1;
+  softPhase='idle';
+  softPhaseT=0;
+  softPlaying=false;
+  softLossHistory=[];
+  shuffleSoft();
+  softLossHistory.push(softLoss(train));
+  surfaceDirty=true
+}
+function cloneSoft(p){
+  return{gates:p.gates.map(g=>({...g})),leaf:[...p.leaf]}
+}
+function lerpSoft(a,b,t){
+  const o=cloneSoft(a);
+  for(let i=0;i<3;i++){
+    o.gates[i].w1=a.gates[i].w1+(b.gates[i].w1-a.gates[i].w1)*t;
+    o.gates[i].w2=a.gates[i].w2+(b.gates[i].w2-a.gates[i].w2)*t;
+    o.gates[i].b=a.gates[i].b+(b.gates[i].b-a.gates[i].b)*t
+  }for(let i=0;i<4;i++)o.leaf[i]=a.leaf[i]+(b.leaf[i]-a.leaf[i])*t;
+  return o
+}
+function sig(z){
+  return z>=0?1/(1+Math.exp(-z)):Math.exp(z)/(1+Math.exp(z))
+}
+function centered(p){
+  return{x:2*p.x-1,y:2*p.y-1}
+}
+function softForward(p,params=soft){
+  const q=centered(p),z=params.gates.map(g=>g.w1*q.x+g.w2*q.y+g.b),g=z.map(sig),l=params.leaf.map(sig),left=(1-g[1])*l[0]+g[1]*l[1],right=(1-g[2])*l[2]+g[2]*l[3],out=(1-g[0])*left+g[0]*right;
+  return{q,z,g,l,left,right,out,routes:[(1-g[0])*(1-g[1]),(1-g[0])*g[1],g[0]*(1-g[2]),g[0]*g[2]]}
+}
+function softSampleLoss(sample,params=soft){
+  const p=clamp(softForward(sample,params).out,1e-7,1-1e-7);
+  return-(sample.cls*Math.log(p)+(1-sample.cls)*Math.log(1-p))
+}
+function softLoss(ds,params=soft){
+  let s=0;
+  for(const p of ds)s+=softSampleLoss(p,params);
+  return s/ds.length
+}
+function softAccuracy(ds,params=soft){
+  let ok=0;
+  for(const p of ds)if((softForward(p,params).out>=.5?1:0)===p.cls)ok++;
+  return ok/ds.length
+}
+function softGradient(sample,params=soft){
+  const f=softForward(sample,params),p=clamp(f.out,1e-6,1-1e-6),dP=(p-sample.cls)/(p*(1-p));
+  const dG0=dP*(f.right-f.left),dLeft=dP*(1-f.g[0]),dRight=dP*f.g[0],dG1=dLeft*(f.l[1]-f.l[0]),dG2=dRight*(f.l[3]-f.l[2]);
+  const dZ=[dG0*f.g[0]*(1-f.g[0]),dG1*f.g[1]*(1-f.g[1]),dG2*f.g[2]*(1-f.g[2])];
+  const dLeafProb=[dLeft*(1-f.g[1]),dLeft*f.g[1],dRight*(1-f.g[2]),dRight*f.g[2]];
+  const grad={gates:[],leaf:[]};
+  for(let i=0;i<3;i++)grad.gates.push({w1:dZ[i]*f.q.x+.001*params.gates[i].w1,w2:dZ[i]*f.q.y+.001*params.gates[i].w2,b:dZ[i]});
+  for(let i=0;i<4;i++)grad.leaf.push(dLeafProb[i]*f.l[i]*(1-f.l[i]));
+  return{grad,forward:f}
+}
+function shuffleSoft(){
+  softOrder=[...Array(train.length).keys()];
+  const rng=makeRng(seed+softEpoch*997+77);
+  for(let i=softOrder.length-1;i>0;i--){
+    const j=Math.floor(rng()*(i+1));
+    [softOrder[i],softOrder[j]]=[softOrder[j],softOrder[i]]
+  }
+}
+function beginSoft(){
+  if(softEpoch>=+softEpochsEl.value){
+    softPlaying=false;
+    softPhase='done';
+    softActive=-1;
+    draw();
+    return false
+  }if(softCursor>=softOrder.length){
+    softCursor=0;
+    softEpoch++;
+    shuffleSoft();
+    softLossHistory.push(softLoss(train));
+    if(softEpoch>=+softEpochsEl.value){
+      softPlaying=false;
+      softPhase='done';
+      softActive=-1;
+      draw();
+      return false
+    }
+  }softActive=softOrder[softCursor++];
+  const x=softGradient(train[softActive]);
+  softCache=x.forward;
+  softGrads=x.grad;
+  softPhase='forward';
+  softPhaseT=0;
+  return true
+}
+function prepareSoftUpdate(){
+  const lr=+lrEl.value;
+  softOld=cloneSoft(soft);
+  softNew=cloneSoft(soft);
+  for(let i=0;i<3;i++){
+    softNew.gates[i].w1-=lr*softGrads.gates[i].w1;
+    softNew.gates[i].w2-=lr*softGrads.gates[i].w2;
+    softNew.gates[i].b-=lr*softGrads.gates[i].b
+  }for(let i=0;i<4;i++)softNew.leaf[i]-=lr*softGrads.leaf[i];
+  softPhase='update';
+  softPhaseT=0
+}
+function finishSoftUpdate(){
+  soft=cloneSoft(softNew);
+  softPhase='hold';
+  softPhaseT=0;
+  surfaceDirty=true;
+  updateStatus()
+}
+function currentSoft(){
+  return softPhase==='update'?lerpSoft(softOld,softNew,ease(clamp(softPhaseT,0,1))):soft
+}
+function oneSoftStep(){
+  if(softPhase==='done')initSoft();
+  if(!beginSoft())return;
+  prepareSoftUpdate();
+  finishSoftUpdate();
+  draw()
+}
+function nextStep(){
+  if(mode==='regions'||mode==='split'||mode==='tree')nextTreeStep();
+  else oneSoftStep()
+}
+function updateStatus(){
+  $('depthVal').textContent=depthEl.value;
+  $('minLeafVal').textContent=minLeafEl.value;
+  $('criterionVal').textContent=criterionEl.value==='gini'?'Gini':'Entropy';
+  $('lrVal').textContent=(+lrEl.value).toFixed(3);
+  $('softEpochsVal').textContent=softEpochsEl.value;
+  $('speedVal').textContent=speedEl.selectedOptions[0].text;
+  $('noiseBuiltInVal').textContent=(+noiseEl.value).toFixed(3);
+  $('samplesVal').textContent=$('eqSamples').value;
+  $('noiseVal').textContent=Math.round(parseFloat($('eqNoise').value)*100)+'%';
+  $('sModel').textContent=`${dataSource==='equation'?'Eqn':datasetEl.selectedOptions[0].text.replace(' quadrants','')} · ${criterionEl.value==='gini'?'Gini':'Entropy'} · depth ${depthEl.value}`;
+  $('sEpoch').textContent=`${applied}/${splitSeq.length}`;
+  $('sLoss').textContent=`${Math.round(accuracy(train)*100)}%`;
+  $('sAcc').textContent=`${Math.round(accuracy(test)*100)}%`;
+  const dot=$('sDot'),txt=$('sStatus'),playBtn=$('playBtn');
+  const isPlaying=(treePlaying||softPlaying)&&!paused;
+  const isDone=(mode==='tree'||mode==='split'||mode==='regions')&&applied>=splitSeq.length&&splitSeq.length>0;
+  if(isPlaying){
+    dot.className='status-dot live';txt.textContent='Training';
+    playBtn.innerHTML='<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3h3v10H4zm5 0h3v10H9z"/></svg>';
+  }else{
+    dot.className=isDone?'status-dot done':(paused?'status-dot paused':'status-dot');
+    txt.textContent=isDone?'Complete':(paused?'Paused':'Idle');
+    playBtn.innerHTML='<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l9 5-9 5V3z"/></svg>';
+  }
+}
+function resize(){
+  const r=c.getBoundingClientRect(),d=devicePixelRatio||1;
+  c.width=Math.max(1,Math.floor(r.width*d));
+  c.height=Math.max(1,Math.floor(r.height*d));
+  ctx.setTransform(d,0,0,d,0,0);
+  regionCache=null;
+  surfaceDirty=true;
+  draw()
+}addEventListener('resize',resize)
+function text(t,x,y,color='#f3eadc',size=12,align='center',weight='400'){
+  ctx.save();ctx.fillStyle=color;ctx.font=`${weight} ${size}px system-ui`;ctx.textAlign=align;ctx.fillText(t,x,y);ctx.restore();
+}
+function line(a,b,color='rgba(215,168,95,.25)',width=2,dash=[]){
+  if(!a||!b||![...a,...b].every(Number.isFinite))return;
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);
+  ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();ctx.restore();
+}
+function dot(x,y,r,color,blur=0){
+  if(!Number.isFinite(x)||!Number.isFinite(y))return;
+  ctx.save();ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=blur;
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.restore();
+}
+function ring(x,y,r,color,width=2){
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke();ctx.restore();
+}
+function box(x,y,w,h,fill='rgba(15,12,9,.80)',stroke='rgba(215,168,95,.18)'){
+  ctx.save();ctx.fillStyle=fill;ctx.strokeStyle=stroke;
+  ctx.beginPath();ctx.roundRect(x,y,w,h,12);ctx.fill();ctx.stroke();ctx.restore();
+}
+function arrow(a,b,color,alpha=1){
+  if(!a||!b)return;
+  ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2.2;
+  ctx.beginPath();ctx.moveTo(...a);ctx.lineTo(...b);ctx.stroke();
+  const ang=Math.atan2(b[1]-a[1],b[0]-a[0]);
+  ctx.beginPath();ctx.moveTo(...b);
+  ctx.lineTo(b[0]-9*Math.cos(ang-.4),b[1]-9*Math.sin(ang-.4));
+  ctx.lineTo(b[0]-9*Math.cos(ang+.4),b[1]-9*Math.sin(ang+.4));
+  ctx.closePath();ctx.fill();ctx.restore();
+}
+function graphArea(W,H,pad=0){return{left:72,right:W-50-pad,top:55,bottom:H-72}}
+function pxX(x,W,H,pad=0){const g=graphArea(W,H,pad);return g.left+x*(g.right-g.left)}
+function pxY(y,W,H,pad=0){const g=graphArea(W,H,pad);return g.bottom-y*(g.bottom-g.top)}
+function drawGrid(W,H,pad=0){
+  const g=graphArea(W,H,pad);
+  ctx.save();ctx.strokeStyle='rgba(215,168,95,.05)';
+  for(let i=0;i<=10;i++){
+    const x=g.left+i/10*(g.right-g.left),y=g.top+i/10*(g.bottom-g.top);
+    ctx.beginPath();ctx.moveTo(x,g.top);ctx.lineTo(x,g.bottom);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(g.left,y);ctx.lineTo(g.right,y);ctx.stroke()
+  }ctx.restore();
+  line([g.left,g.bottom],[g.right,g.bottom],'rgba(243,234,220,.28)',1.2);
+  line([g.left,g.top],[g.left,g.bottom],'rgba(243,234,220,.28)',1.2)
+}
+function drawData(W,H,pad=0,activeSet=null){
+  const hs=activeSet?new Set(activeSet):null;
+  for(let i=0;i<train.length;i++){
+    const p=train[i],active=!hs||hs.has(i),col=p.cls===0?'#d7a85f':'#b8d7ad';
+    dot(pxX(p.x,W,H,pad),pxY(p.y,W,H,pad),active?5:3,active?col:'rgba(170,154,136,.16)',active?4:0)
+  }for(const p of test){
+    const col=p.cls===0?'rgba(215,168,95,.80)':'rgba(184,215,173,.80)';
+    ring(pxX(p.x,W,H,pad),pxY(p.y,W,H,pad),4,col,1.4)
+  }
+}
+function drawSplits(W,H,pad=0){
+  for(const n of splitSeq.slice(0,applied)){
+    const s=n.split,b=n.bounds;
+    if(s.feature==='x'){
+      const x=pxX(s.threshold,W,H,pad);
+      line([x,pxY(b.ymin,W,H,pad)],[x,pxY(b.ymax,W,H,pad)],'rgba(155,121,184,.78)',2.2)
+    }else{
+      const y=pxY(s.threshold,W,H,pad);
+      line([pxX(b.xmin,W,H,pad),y],[pxX(b.xmax,W,H,pad),y],'rgba(155,121,184,.78)',2.2)
+    }
+  }
+}
+function buildRegion(W,H){
+  const g=graphArea(W,H),key=`${W|0}-${H|0}-${applied}-${seed}-${depthEl.value}-${minLeafEl.value}-${criterionEl.value}`;
+  if(regionCache&&regionKey===key)return regionCache;
+  const off=document.createElement('canvas'),scale=.20;
+  off.width=Math.max(30,Math.floor((g.right-g.left)*scale));
+  off.height=Math.max(25,Math.floor((g.bottom-g.top)*scale));
+  const oc=off.getContext('2d'),img=oc.createImageData(off.width,off.height);
+  for(let y=0;y<off.height;y++)for(let x=0;x<off.width;x++){
+    const q={x:x/(off.width-1),y:1-y/(off.height-1)},leaf=leafFor(q),p=leaf?leaf.p1:.5,strength=Math.abs(p-.5)*2,i=(y*off.width+x)*4;
+    if(strength<.05){
+      img.data[i]=80;img.data[i+1]=70;img.data[i+2]=62;img.data[i+3]=22
+    }else if(p<.5){
+      img.data[i]=215;img.data[i+1]=168;img.data[i+2]=95;img.data[i+3]=Math.round(18+42*strength)
+    }else{
+      img.data[i]=184;img.data[i+1]=215;img.data[i+2]=173;img.data[i+3]=Math.round(18+42*strength)
+    }
+  }oc.putImageData(img,0,0);
+  regionCache=off;
+  regionKey=key;
+  return off
+}
+function drawRegions(W,H){
+  drawGrid(W,H);
+  const g=graphArea(W,H),off=buildRegion(W,H);
+  ctx.drawImage(off,g.left,g.top,g.right-g.left,g.bottom-g.top);
+  drawSplits(W,H);
+  drawData(W,H);
+  const n=currentNode();
+  if(n){
+    const b=n.bounds;
+    ctx.save();
+    ctx.strokeStyle='rgba(242,201,120,.68)';
+    ctx.lineWidth=2;
+    ctx.setLineDash([8,6]);
+    ctx.strokeRect(pxX(b.xmin,W,H),pxY(b.ymax,W,H),pxX(b.xmax,W,H)-pxX(b.xmin,W,H),pxY(b.ymin,W,H)-pxY(b.ymax,W,H));
+    ctx.restore()
+  }box(22,20,445,112);
+  text('Correct CART boundary growth',40,45,'#f2c978',12,'left','700');
+  text(`Balanced training data: ${train.length} points + ${test.length} unseen test points`,40,72,'#f3eadc',15,'left','600');
+  text(`Built ${applied} of ${splitSeq.length} splits; each coloured region is one current leaf.`,40,99,'#aa9a88',12,'left');
+  text('Filled points = training; outlined points = test. Neutral regions are mixed leaves.',40,123,'#aa9a88',11,'left')
+}
+function candidateLine(W,H,node,cand,pad=330){
+  if(!node||!cand)return;
+  const b=node.bounds;
+  if(cand.feature==='x'){
+    const x=pxX(cand.threshold,W,H,pad);
+    line([x,pxY(b.ymin,W,H,pad)],[x,pxY(b.ymax,W,H,pad)],'#f2c978',3,[8,6])
+  }else{
+    const y=pxY(cand.threshold,W,H,pad);
+    line([pxX(b.xmin,W,H,pad),y],[pxX(b.xmax,W,H,pad),y],'#f2c978',3,[8,6])
+  }
+}
+function drawSplit(W,H){
+  const pad=330;
+  drawGrid(W,H,pad);
+  drawSplits(W,H,pad);
+  const n=currentNode();
+  if(!n){
+    drawData(W,H,pad);
+    box(W-300,40,265,H-105);
+    text('Tree complete',W-280,72,'#b8d7ad',16,'left','700');
+    text(`Test accuracy ${Math.round(accuracy(test)*100)}%`,W-280,105,'#f3eadc',13,'left');
+    return
+  }drawData(W,H,pad,n.indices);
+  const b=n.bounds,cand=currentCandidate()||n.split;
+  ctx.save();
+  ctx.strokeStyle='rgba(242,201,120,.52)';
+  ctx.lineWidth=2;
+  ctx.setLineDash([8,6]);
+  ctx.strokeRect(pxX(b.xmin,W,H,pad),pxY(b.ymax,W,H,pad),pxX(b.xmax,W,H,pad)-pxX(b.xmin,W,H,pad),pxY(b.ymin,W,H,pad)-pxY(b.ymax,W,H,pad));
+  ctx.restore();
+  candidateLine(W,H,n,cand,pad);
+  const x=W-300,y=40,pw=265,ph=H-105,seq=scanSequence(n),ct=n.counts;
+  box(x,y,pw,ph);
+  text('Correct threshold scan',x+20,y+30,'#f2c978',13,'left','700');
+  text(`Candidate ${Math.min(scanStep+1,seq.length)} / ${seq.length}`,x+20,y+58,'#aa9a88',11,'left');
+  text(`${n.indices.length} samples: A ${ct.a}, B ${ct.b}`,x+20,y+83,'#f3eadc',13,'left','600');
+  text(`Parent impurity ${n.impurity.toFixed(3)}`,x+20,y+108,'#aa9a88',12,'left');
+  text(`${cand.feature.toUpperCase()} ≤ ${cand.threshold.toFixed(3)}`,x+20,y+157,'#f3eadc',17,'left','700');
+  text(`left impurity ${cand.li.toFixed(3)}`,x+20,y+187,'#aa9a88',12,'left');
+  text(`right impurity ${cand.ri.toFixed(3)}`,x+20,y+211,'#aa9a88',12,'left');
+  text(`weighted impurity ${cand.score.toFixed(3)}`,x+20,y+235,'#aa9a88',12,'left');
+  text(`information gain ${cand.gain.toFixed(3)}`,x+20,y+261,cand===n.split?'#b8d7ad':'#d7a85f',12,'left','700');
+  const barX=x+20,barW=pw-40,barY=y+305,den=criterionEl.value==='gini'?.5:1;
+  text('Before',barX,barY-10,'#aa9a88',11,'left');
+  box(barX,barY,barW,19,'rgba(217,143,130,.05)','rgba(217,143,130,.15)');
+  ctx.fillStyle='rgba(217,143,130,.70)';
+  ctx.fillRect(barX,barY,barW*clamp(n.impurity/den,0,1),19);
+  text('After',barX,barY+48,'#aa9a88',11,'left');
+  box(barX,barY+58,barW,19,'rgba(184,215,173,.05)','rgba(184,215,173,.15)');
+  ctx.fillStyle='rgba(184,215,173,.72)';
+  ctx.fillRect(barX,barY+58,barW*clamp(cand.score/den,0,1),19);
+  text(cand===n.split?'BEST SPLIT — next step applies it':'Scanning thresholds in order…',x+20,y+410,cand===n.split?'#b8d7ad':'#d7a85f',12,'left','700')
+}
+function visibleNodes(n=root,out=[]){
+  if(!n)return out;
+  out.push(n);
+  if(isApplied(n)){
+    visibleNodes(n.left,out);
+    visibleNodes(n.right,out)
+  }return out
+}
+function treeLayout(){
+  let leaf=0;
+  const pos=new Map();
+  function walk(n){
+    if(!isApplied(n)){
+      const x=leaf++;
+      pos.set(n,{x,depth:n.depth});
+      return x
+    }const a=walk(n.left),b=walk(n.right),x=(a+b)/2;
+    pos.set(n,{x,depth:n.depth});
+    return x
+  }walk(root);
+  return{pos,leafCount:Math.max(1,leaf)}
+}
+function drawTree(W,H){
+  const chartH=215,top=38,bottom=H-chartH-42,{pos,leafCount}=treeLayout(),nodes=visibleNodes(),maxD=Math.max(1,...nodes.map(n=>n.depth)),nodeW=Math.min(138,Math.max(80,(W-80)/(leafCount+1))),nodeH=58,p=n=>({x:52+(pos.get(n).x+.5)/leafCount*(W-104),y:top+n.depth/maxD*(bottom-top)});
+  for(const n of nodes)if(isApplied(n)){
+    const a=p(n),l=p(n.left),r=p(n.right);
+    line([a.x,a.y+nodeH/2],[l.x,l.y-nodeH/2],'rgba(215,168,95,.30)',1.7);
+    line([a.x,a.y+nodeH/2],[r.x,l.y-nodeH/2],'rgba(184,215,173,.30)',1.7);
+  }const cur=currentNode();
+  for(const n of nodes){
+    const q=p(n),split=isApplied(n),fill=split?'rgba(155,121,184,.10)':n.pred===0?'rgba(215,168,95,.10)':'rgba(184,215,173,.10)',stroke=n===cur?'#f2c978':split?'rgba(155,121,184,.55)':n.pred===0?'rgba(215,168,95,.45)':'rgba(184,215,173,.45)';
+    box(q.x-nodeW/2,q.y-nodeH/2,nodeW,nodeH,fill,stroke);
+    if(split){
+      text(`${n.split.feature.toUpperCase()} ≤ ${n.split.threshold.toFixed(2)}`,q.x,q.y-8,'#f3eadc',11,'center','700');
+      text(`n=${n.indices.length} imp=${n.impurity.toFixed(2)}`,q.x,q.y+13,'#aa9a88',9)
+    }else{
+      text(`Predict ${n.pred===0?'A':'B'}`,q.x,q.y-8,n.pred===0?'#d7a85f':'#b8d7ad',11,'center','700');
+      text(`A:${n.counts.a} B:${n.counts.b}`,q.x,q.y+13,'#aa9a88',9)
+    }
+  }const panelX=30,panelY=H-chartH+8,panelW=W-60,panelH=chartH-52;
+  box(panelX,panelY,panelW,panelH);
+  text('Training and validation accuracy versus number of applied splits',panelX+18,panelY+24,'#f2c978',12,'left','700');
+  const gx=panelX+48,gy=panelY+40,gw=panelW-75,gh=panelH-68;
+  line([gx,gy+gh],[gx+gw,gy+gh],'rgba(243,234,220,.18)',1);
+  line([gx,gy],[gx,gy+gh],'rgba(243,234,220,.18)',1);
+  const tr=[],te=[];
+  for(let k=0;k<=splitSeq.length;k++){
+    tr.push(accuracy(train,k));te.push(accuracy(test,k))
+  }function curve(vals,col){
+    ctx.save();ctx.strokeStyle=col;ctx.lineWidth=2.7;ctx.beginPath();
+    vals.forEach((v,i)=>{
+      const x=gx+i/Math.max(1,vals.length-1)*gw,y=gy+gh-v*gh;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)
+    });
+    ctx.stroke();ctx.restore()
+  }curve(tr,'#d7a85f');
+  curve(te,'#b8d7ad');
+  const mx=gx+applied/Math.max(1,splitSeq.length)*gw;
+  line([mx,gy],[mx,gy+gh],'rgba(242,201,120,.45)',1.5,[5,5]);
+  text('gold train',gx,gy+gh+20,'#d7a85f',10,'left');
+  text('green test',gx+90,gy+gh+20,'#b8d7ad',10,'left');
+  text(`${applied} splits`,mx,gy+12,'#f2c978',10,'center','700')
+}
+function clippedGate(params,index){
+  const g=params.gates[index],pts=[];
+  function add(x,y){
+    if(x>=0&&x<=1&&y>=0&&y<=1&&!pts.some(p=>Math.hypot(p.x-x,p.y-y)<1e-6))pts.push({x,y})
+  }if(Math.abs(g.w2)>1e-8){
+    add(0,((-(g.w1*(-1)+g.b)/g.w2)+1)/2);
+    add(1,((-(g.w1*(1)+g.b)/g.w2)+1)/2)
+  }if(Math.abs(g.w1)>1e-8){
+    add(((-(g.w2*(-1)+g.b)/g.w1)+1)/2,0);
+    add(((-(g.w2*(1)+g.b)/g.w1)+1)/2,1)
+  }return pts.length>=2?[pts[0],pts[1]]:null
+}
+function softRegion(W,H,params){
+  const g=graphArea(W,H),off=document.createElement('canvas'),scale=.12;
+  off.width=Math.max(30,Math.floor((g.right-g.left)*scale));
+  off.height=Math.max(25,Math.floor((g.bottom-g.top)*scale));
+  const oc=off.getContext('2d'),img=oc.createImageData(off.width,off.height);
+  for(let y=0;y<off.height;y++)for(let x=0;x<off.width;x++){
+    const p={x:x/(off.width-1),y:1-y/(off.height-1)},pr=softForward(p,params).out,i=(y*off.width+x)*4;
+    if(pr<.5){
+      img.data[i]=215;img.data[i+1]=168;img.data[i+2]=95
+    }else{
+      img.data[i]=184;img.data[i+1]=215;img.data[i+2]=173
+    }img.data[i+3]=Math.round(18+38*Math.abs(pr-.5)*2)
+  }oc.putImageData(img,0,0);
+  return off
+}
+function drawSoft(W,H){
+  drawGrid(W,H);
+  const params=currentSoft(),g=graphArea(W,H),off=softRegion(W,H,params);
+  ctx.drawImage(off,g.left,g.top,g.right-g.left,g.bottom-g.top);
+  drawData(W,H);
+  const cols=['#9b79b8','#d7a85f','#b8d7ad'];
+  for(let i=0;i<3;i++){
+    const s=clippedGate(params,i);
+    if(s)line([pxX(s[0].x,W,H),pxY(s[0].y,W,H)],[pxX(s[1].x,W,H),pxY(s[1].y,W,H)],cols[i],i===0?4:2.3,i===0?[]:[7,5])
+  }if(softActive>=0){
+    const p=train[softActive],f=softForward(p,params),x=pxX(p.x,W,H),y=pxY(p.y,W,H);
+    dot(x,y,10,'#f2c978',24);
+    ring(x,y,17+Math.sin(performance.now()/150)*2,'rgba(242,201,120,.65)',2);
+    box(22,20,455,120);
+    text('Real two-level differentiable soft tree',40,45,'#f2c978',12,'left','700');
+    text(`target=${p.cls}  prediction=${f.out.toFixed(3)}  BCE=${softSampleLoss(p,params).toFixed(3)}`,40,73,'#f3eadc',14,'left','600');
+    text(`root gate=${f.g[0].toFixed(2)}  left gate=${f.g[1].toFixed(2)}  right gate=${f.g[2].toFixed(2)}`,40,99,'#aa9a88',12,'left');
+    text(`route weights: ${f.routes.map(v=>v.toFixed(2)).join(' · ')}`,40,122,'#b8d7ad',11,'left','600')
+  }else{
+    box(22,20,455,100);
+    text('Real two-level differentiable soft tree',40,45,'#f2c978',12,'left','700');
+    text('Three trainable soft gates route every sample to four trainable leaves.',40,72,'#f3eadc',13,'left','600');
+    text('Press Play or Step to animate forward routing and SGD.',40,97,'#aa9a88',11,'left')
+  }const bx=W-300,by=24,bw=270,bh=162;
+  box(bx,by,bw,bh);
+  text('Soft-tree structure',bx+18,by+25,'#f2c978',12,'left','700');
+  const rootP=[bx+bw/2,by+53],leftP=[bx+75,by+100],rightP=[bx+bw-75,by+100],leaves=[[bx+35,by+145],[bx+110,by+145],[bx+bw-110,by+145],[bx+bw-35,by+145]];
+  line(rootP,leftP,'rgba(215,168,95,.45)',2);
+  line(rootP,rightP,'rgba(184,215,173,.45)',2);
+  line(leftP,leaves[0],'rgba(215,168,95,.35)',1.5);
+  line(leftP,leaves[1],'rgba(184,215,173,.35)',1.5);
+  line(rightP,leaves[2],'rgba(215,168,95,.35)',1.5);
+  line(rightP,leaves[3],'rgba(184,215,173,.35)',1.5);
+  dot(...rootP,9,'#9b79b8',8);
+  dot(...leftP,8,'#d7a85f',6);
+  dot(...rightP,8,'#b8d7ad',6);
+  for(let i=0;i<4;i++){
+    dot(...leaves[i],7,sig(params.leaf[i])>=.5?'#b8d7ad':'#d7a85f',5);
+    text(sig(params.leaf[i]).toFixed(2),leaves[i][0],leaves[i][1]+22,'#aa9a88',9)
+  }
+}
+function buildSurface(){
+  const cw=soft.gates[0].w1,cb=soft.gates[0].b,rw=4.5,rb=4.5,n=21,grid=[];
+  let min=Infinity,max=-Infinity;
+  for(let i=0;i<n;i++){
+    const row=[],wv=cw-rw+2*rw*i/(n-1);
+    for(let j=0;j<n;j++){
+      const bv=cb-rb+2*rb*j/(n-1),p=cloneSoft(soft);
+      p.gates[0].w1=wv;
+      p.gates[0].b=bv;
+      const L=softLoss(train,p);
+      min=Math.min(min,L);
+      max=Math.max(max,L);
+      row.push({w:wv,b:bv,loss:L})
+    }grid.push(row)
+  }surfaceCache={grid,cw,cb,rw,rb,min,max,range:Math.max(1e-8,max-min)};
+  surfaceDirty=false;
+  lastSurfaceBuild=performance.now()
+}
+function surfHeight(L,s){
+  return Math.log1p(6*Math.max(0,L-s.min)/s.range)/Math.log(7)
+}
+function project3(w,b,L,W,H,s,floor=false){
+  let x=(w-s.cw)/s.rw*270,z=(b-s.cb)/s.rb*220,y=floor?0:surfHeight(L,s)*275;
+  const cy=Math.cos(rotY),sy=Math.sin(rotY),x1=x*cy-z*sy,z1=x*sy+z*cy,cx=Math.cos(rotX),sx=Math.sin(rotX),y1=y*cx-z1*sx,z2=y*sx+z1*cx,scale=1050/(1050+z2+220)*zoom;
+  return{x:W*.57+x1*scale,y:H*.73-y1*scale,d:z2}
+}
+function drawSurface(W,H){
+  if((surfaceDirty||!surfaceCache)&&performance.now()-lastSurfaceBuild>300)buildSurface();
+  if(!surfaceCache)buildSurface();
+  const s=surfaceCache,cells=[];
+  for(let i=0;i<s.grid.length-1;i++)for(let j=0;j<s.grid[i].length-1;j++){
+    const a=s.grid[i][j],b=s.grid[i+1][j],d=s.grid[i+1][j+1],e=s.grid[i][j+1],pts=[project3(a.w,a.b,a.loss,W,H,s),project3(b.w,b.b,b.loss,W,H,s),project3(d.w,d.b,d.loss,W,H,s),project3(e.w,e.b,e.loss,W,H,s)],h=(surfHeight(a.loss,s)+surfHeight(b.loss,s)+surfHeight(d.loss,s)+surfHeight(e.loss,s))/4;
+    cells.push({pts,depth:pts.reduce((q,p)=>q+p.d,0)/4,h})
+  }cells.sort((a,b)=>b.depth-a.depth);
+  for(const cell of cells){
+    ctx.save();
+    const h=cell.h,r=Math.round(74+150*h),g=Math.round(54+105*h),bl=Math.round(98-18*h);
+    ctx.fillStyle=`rgba(${r},${g},${bl},${.30+.5*h})`;
+    ctx.strokeStyle='rgba(242,201,120,.10)';
+    ctx.lineWidth=.7;
+    ctx.beginPath();
+    ctx.moveTo(cell.pts[0].x,cell.pts[0].y);
+    for(let i=1;i<4;i++)ctx.lineTo(cell.pts[i].x,cell.pts[i].y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore()
+  }const curL=softLoss(train),cur=project3(soft.gates[0].w1,soft.gates[0].b,curL,W,H,s),floor=project3(soft.gates[0].w1,soft.gates[0].b,s.min,W,H,s,true);
+  line([floor.x,floor.y],[cur.x,cur.y],'rgba(242,201,120,.55)',2);
+  dot(cur.x,cur.y,12,'#f2c978',25);
+  text('current root gate',cur.x,cur.y-20,'#f2c978',11,'center','700');
+  const o=project3(s.cw-s.rw,s.cb-s.rb,s.min,W,H,s,true),wa=project3(s.cw+s.rw,s.cb-s.rb,s.min,W,H,s,true),ba=project3(s.cw-s.rw,s.cb+s.rb,s.min,W,H,s,true),la=project3(s.cw-s.rw,s.cb-s.rb,s.max,W,H,s);
+  arrow([o.x,o.y],[wa.x,wa.y],'#d7a85f');
+  arrow([o.x,o.y],[ba.x,ba.y],'#b8d7ad');
+  arrow([o.x,o.y],[la.x,la.y],'#d98f82');
+  text('root w₁',wa.x+7,wa.y,'#f2c978',11,'left','700');
+  text('root bias',ba.x+7,ba.y,'#b8d7ad',11,'left','700');
+  text('BCE loss',la.x,la.y-9,'#d98f82',11,'center','700');
+  box(24,20,480,122);
+  text('Real 3D loss slice for the differentiable soft tree',42,45,'#f2c978',13,'left','700');
+  text('X = root-gate weight w₁, Z = root-gate bias, height = training BCE.',42,73,'#f3eadc',13,'left','600');
+  text('All other gate and leaf parameters are fixed while this surface is computed.',42,99,'#aa9a88',12,'left');
+  text('Drag to rotate · mouse wheel to zoom · double-click to reset.',42,123,'#b8d7ad',11,'left','600');
+  const ix=W*.77,iy=H*.07,iw=W*.18,ih=H*.23;
+  box(ix,iy,iw,ih);
+  text('Current values',ix+15,iy+24,'#f2c978',12,'left','700');
+  text(`w₁ ${soft.gates[0].w1.toFixed(3)}`,ix+15,iy+58,'#f3eadc',12,'left');
+  text(`bias ${soft.gates[0].b.toFixed(3)}`,ix+15,iy+84,'#f3eadc',12,'left');
+  text(`loss ${curL.toFixed(3)}`,ix+15,iy+110,'#b8d7ad',12,'left');
+  text(`test ${Math.round(softAccuracy(test)*100)}%`,ix+15,iy+136,'#b8d7ad',12,'left')
+}
+function draw(){
+  const W=c.clientWidth,H=c.clientHeight;
+  if(W<=0||H<=0)return;
+  ctx.clearRect(0,0,W,H);
+  updateStatus();
+  if(mode==='regions')drawRegions(W,H);
+  else if(mode==='split')drawSplit(W,H);
+  else if(mode==='tree')drawTree(W,H);
+  else if(mode==='soft')drawSoft(W,H);
+  else drawSurface(W,H);
+  const info={
+    regions:['Boundary Growth: each split changes one leaf region using the best impurity reduction.','Standard CART'],
+    split:['Correct Split Search: thresholds are scanned in feature order, then the best split is applied.','Standard CART'],
+    tree:['Tree & Validation: compare training and unseen-test accuracy as the tree grows.','Standard CART'],
+    soft:['Real Soft-Tree SGD: forward routing, leaf mixing, backpropagation and parameter updates.','Differentiable tree'],
+    surface:['Soft-Tree 3D Loss: rotate a real BCE surface over the root gate weight and bias.','Differentiable tree']
+  };
+  $('note').textContent=info[mode][0];
+  $('badge').textContent=(treePlaying||softPlaying)&&!paused?'Training':info[mode][1]
+}
+function loop(now){
+  const dt=lastTime?Math.min(80,now-lastTime):16;
+  lastTime=now;
+  if(!paused){
+    accum+=dt;
+    if(treePlaying&&accum>=+speedEl.value){
+      accum=0;
+      nextTreeStep()
+    }if(softPlaying){
+      softPhaseT+=dt/(+speedEl.value);
+      if(softPhase==='idle'||softPhase==='hold')beginSoft();
+      else if(softPhase==='forward'&&softPhaseT>=1){softPhase='backward';softPhaseT=0}
+      else if(softPhase==='backward'&&softPhaseT>=1)prepareSoftUpdate();
+      else if(softPhase==='update'&&softPhaseT>=1)finishSoftUpdate();
+      draw()
+    }
+  }raf=requestAnimationFrame(loop)
+}
+function fullReset(){
+  rebuildTree();
+  initSoft();
+  paused=false;
+  updateStatus();
+  draw()
+}
+function regenerate(){
+  seed+=101;
+  generateData();
+  fullReset()
+}
+
+// ─── UI wiring ───
+document.querySelectorAll('#viewControl button').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('#viewControl button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  mode=btn.dataset.mode;
+  treePlaying=false;softPlaying=false;paused=false;accum=0;
+  draw();
+}));
+$('playBtn').onclick=()=>{
+  const isPlaying=(treePlaying||softPlaying)&&!paused;
+  if(isPlaying){paused=true;}
+  else{
+    paused=false;accum=0;
+    if(mode==='regions'||mode==='split'||mode==='tree'){
+      treePlaying=true;softPlaying=false;mode='split';
+      document.querySelectorAll('#viewControl button').forEach(t=>t.classList.toggle('active',t.dataset.mode==='split'));
+    }else{
+      softPlaying=true;treePlaying=false;mode='soft';
+      document.querySelectorAll('#viewControl button').forEach(t=>t.classList.toggle('active',t.dataset.mode==='soft'));
+      if(softPhase==='done')initSoft();
+    }
+  }
+  updateStatus();draw();
+};
+$('stepBtn').onclick=nextStep;
+$('resetBtn').onclick=fullReset;
+function openSheet(){$('sheet').classList.add('show');$('sheetBackdrop').classList.add('show');}
+function closeSheet(){$('sheet').classList.remove('show');$('sheetBackdrop').classList.remove('show');}
+$('settingsBtn').onclick=openSheet;
+$('eqField').onclick=openSheet;
+$('sheetClose').onclick=closeSheet;
+$('sheetBackdrop').onclick=closeSheet;
+$('eqApply').onclick=()=>{applyEquation();closeSheet();};
+$('eqInput').addEventListener('keypress',e=>{if(e.key==='Enter'){applyEquation();closeSheet();}});
+document.querySelectorAll('.preset').forEach(btn=>btn.onclick=()=>{$('eqInput').value=btn.dataset.eq;applyEquation();closeSheet();});
+document.querySelectorAll('#sourceToggle button').forEach(btn=>btn.onclick=()=>setDataSource(btn.dataset.source));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
+$('eqSamples').addEventListener('change',()=>{$('samplesVal').textContent=$('eqSamples').value;if(dataSource==='equation'){generateData();fullReset();}});
+$('eqNoise').addEventListener('input',function(){$('noiseVal').textContent=Math.round(parseFloat(this.value)*100)+'%';if(dataSource==='equation'){generateData();fullReset();}});
+[datasetEl].forEach(el=>el.addEventListener('change',()=>{generateData();fullReset();}));
+[noiseEl].forEach(el=>el.addEventListener('input',()=>{if(dataSource!=='equation'){generateData();fullReset();}else{updateStatus();}}));
+[depthEl,minLeafEl].forEach(el=>el.addEventListener('input',()=>{rebuildTree();draw();}));
+criterionEl.addEventListener('change',()=>{rebuildTree();draw();});
+[lrEl,softEpochsEl].forEach(el=>el.addEventListener('input',()=>{updateStatus();draw();}));
+speedEl.addEventListener('change',()=>{updateStatus();draw();});
+c.addEventListener('pointerdown',e=>{
+  if(mode!=='surface')return;
+  drag=true;lastPX=e.clientX;lastPY=e.clientY;c.setPointerCapture(e.pointerId);
+});
+c.addEventListener('pointermove',e=>{
+  if(!drag||mode!=='surface')return;
+  rotY+=(e.clientX-lastPX)*.008;
+  rotX=clamp(rotX+(e.clientY-lastPY)*.008,-1.35,-.25);
+  lastPX=e.clientX;lastPY=e.clientY;draw();
+});
+c.addEventListener('pointerup',()=>drag=false);
+c.addEventListener('pointercancel',()=>drag=false);
+c.addEventListener('wheel',e=>{
+  if(mode!=='surface')return;
+  e.preventDefault();
+  zoom=clamp(zoom*(e.deltaY>0?.9:1.1),.55,2.1);
+  draw();
+},{passive:false});
+c.addEventListener('dblclick',()=>{
+  if(mode!=='surface')return;
+  rotX=-.58;rotY=.72;zoom=1;
+  draw();
+});
+
+generateData();
+buildTree();
+initSoft();
+resize();
+updateStatus();
+window.__dtTest={
+  state:()=>({splits:splitSeq.length,applied,train:accuracy(train),test:accuracy(test),softLoss:softLoss(train),softTest:softAccuracy(test),softEpoch}),
+  treeStep:nextTreeStep,softStep:oneSoftStep,
+  runTree:n=>{for(let i=0;i<n;i++)nextTreeStep();return window.__dtTest.state()},
+  runSoft:n=>{for(let i=0;i<n;i++)oneSoftStep();return window.__dtTest.state()}
+};
+raf=requestAnimationFrame(loop);
+</script>
+</body>
+</html>
