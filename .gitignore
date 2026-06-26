@@ -1,0 +1,16 @@
+.venv/
+.deps/
+.pip-cache/
+.tmp/
+__pycache__/
+.pytest_cache/
+pytest-cache-files-*/
+.mypy_cache/
+.ruff_cache/
+node_modules/
+dist/
+.next/
+.env
+*.pyc
+*.log
+models/**/*.onnx

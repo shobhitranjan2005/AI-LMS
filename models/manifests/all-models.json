@@ -1,0 +1,113 @@
+{
+  "blocked": {
+    "image_repair": {
+      "mnist-autoencoder": {
+        "status": "blocked",
+        "reason": "The researched pretrained MNIST autoencoder checkpoints on Hugging Face expose no compatible licence metadata. The app does not package unlicensed weights.",
+        "researched_candidates": [
+          "Ab0/autoencoder-keras-mnist-demo",
+          "nateraw/autoencoder-keras-mnist-demo-with-card"
+        ]
+      }
+    }
+  },
+  "digit": {
+    "mnist-12-float32": {
+      "filename": "mnist-12.onnx",
+      "source_url": "https://github.com/onnx/models/raw/main/validated/vision/classification/mnist/model/mnist-12.onnx",
+      "license": "MIT",
+      "precision": "float32",
+      "local_path": "models/digit/mnist-12.onnx",
+      "size_bytes": 26143,
+      "sha256": "5c688690f8bacf667d4c2074af5ad0646ca328d7ab03eccf944a65b320171bdd"
+    },
+    "mnist-12-int8": {
+      "filename": "mnist-12-int8.onnx",
+      "source_url": "https://github.com/onnx/models/raw/main/validated/vision/classification/mnist/model/mnist-12-int8.onnx",
+      "license": "MIT",
+      "precision": "int8",
+      "local_path": "models/digit/mnist-12-int8.onnx",
+      "size_bytes": 10969,
+      "sha256": "5eac0752eecf4991a5e4157cf31a186f2c61090494019e87979ac17df1dae253"
+    }
+  },
+  "text": {
+    "distilbert-sst2-int8-onnx": {
+      "filename": "model_quantized.onnx",
+      "source_url": "https://huggingface.co/fxmarty/distilbert-base-uncased-sst2-onnx-int8-for-tensorrt/resolve/main/model_quantized.onnx",
+      "license": "MIT",
+      "task": "sentiment-classification",
+      "precision": "int8",
+      "local_path": "models/text/model_quantized.onnx",
+      "size_bytes": 268183103,
+      "sha256": "477d0d0c102ed8529620664cc817b927869eddf286c9f78a85f28164300ed101"
+    },
+    "distilbert-sst2-vocab": {
+      "filename": "vocab.txt",
+      "source_url": "https://huggingface.co/fxmarty/distilbert-base-uncased-sst2-onnx-int8-for-tensorrt/resolve/main/vocab.txt",
+      "license": "MIT",
+      "task": "tokenizer",
+      "local_path": "models/text/vocab.txt",
+      "size_bytes": 231508,
+      "sha256": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+    },
+    "distilbert-sst2-config": {
+      "filename": "config.json",
+      "source_url": "https://huggingface.co/fxmarty/distilbert-base-uncased-sst2-onnx-int8-for-tensorrt/resolve/main/config.json",
+      "license": "MIT",
+      "task": "metadata",
+      "local_path": "models/text/config.json",
+      "size_bytes": 735,
+      "sha256": "cd84b1ef0a82049c42aa925a429d5ad895a54853e2095541699a26d52ac1578b"
+    }
+  },
+  "sound": {
+    "yamnet-onnx": {
+      "filename": "yamnet.onnx",
+      "source_url": "https://huggingface.co/zeropointnine/yamnet-onnx/resolve/main/yamnet.onnx",
+      "license": "Apache-2.0",
+      "task": "audio-classification",
+      "local_path": "models/sound/yamnet.onnx",
+      "size_bytes": 16093603,
+      "sha256": "1510041dce24a2e9e84ec546807ac408ae496da6d1ed41bc3ccba649623f8e19"
+    },
+    "yamnet-labels": {
+      "filename": "yamnet_class_map.csv",
+      "source_url": "https://huggingface.co/zeropointnine/yamnet-onnx/resolve/main/yamnet_class_map.csv",
+      "license": "Apache-2.0",
+      "task": "labels",
+      "local_path": "models/sound/yamnet_class_map.csv",
+      "size_bytes": 14096,
+      "sha256": "cdf24d193e196d9e95912a2667051ae203e92a2ba09449218ccb40ef787c6df2"
+    }
+  },
+  "style": {
+    "mosaic-9": {
+      "filename": "mosaic-9.onnx",
+      "source_url": "https://github.com/onnx/models/raw/main/validated/vision/style_transfer/fast_neural_style/model/mosaic-9.onnx",
+      "license": "BSD-3-Clause",
+      "task": "neural-style-transfer",
+      "local_path": "models/style/mosaic-9.onnx",
+      "size_bytes": 6728029,
+      "sha256": "fa646dedade881243f8d5a2ceb7de2b93675b21fc24f7482894ac4851a9a0a47"
+    },
+    "candy-9": {
+      "filename": "candy-9.onnx",
+      "source_url": "https://github.com/onnx/models/raw/main/validated/vision/style_transfer/fast_neural_style/model/candy-9.onnx",
+      "license": "BSD-3-Clause",
+      "task": "neural-style-transfer",
+      "local_path": "models/style/candy-9.onnx",
+      "size_bytes": 6728029,
+      "sha256": "9d11a3529d1e547da6ae07201d93484dbab2ec0a3614535752c8f40f0fe2968a"
+    },
+    "rain-princess-9": {
+      "filename": "rain-princess-9.onnx",
+      "source_url": "https://github.com/onnx/models/raw/main/validated/vision/style_transfer/fast_neural_style/model/rain-princess-9.onnx",
+      "license": "BSD-3-Clause",
+      "task": "neural-style-transfer",
+      "local_path": "models/style/rain-princess-9.onnx",
+      "size_bytes": 6728029,
+      "sha256": "4162912e6f75fedef6f810ae989b9e10d3d5d43308dab34b027c850cf255e152"
+    }
+  }
+}

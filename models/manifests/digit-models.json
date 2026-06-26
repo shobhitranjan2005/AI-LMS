@@ -1,0 +1,20 @@
+{
+  "mnist-12-float32": {
+    "filename": "mnist-12.onnx",
+    "source_url": "https://github.com/onnx/models/raw/main/validated/vision/classification/mnist/model/mnist-12.onnx",
+    "license": "MIT",
+    "precision": "float32",
+    "local_path": "models/digit/mnist-12.onnx",
+    "size_bytes": 26143,
+    "sha256": "5c688690f8bacf667d4c2074af5ad0646ca328d7ab03eccf944a65b320171bdd"
+  },
+  "mnist-12-int8": {
+    "filename": "mnist-12-int8.onnx",
+    "source_url": "https://github.com/onnx/models/raw/main/validated/vision/classification/mnist/model/mnist-12-int8.onnx",
+    "license": "MIT",
+    "precision": "int8",
+    "local_path": "models/digit/mnist-12-int8.onnx",
+    "size_bytes": 10969,
+    "sha256": "5eac0752eecf4991a5e4157cf31a186f2c61090494019e87979ac17df1dae253"
+  }
+}

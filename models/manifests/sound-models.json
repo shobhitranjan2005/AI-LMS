@@ -1,0 +1,20 @@
+{
+  "yamnet-onnx": {
+    "filename": "yamnet.onnx",
+    "source_url": "https://huggingface.co/zeropointnine/yamnet-onnx/resolve/main/yamnet.onnx",
+    "license": "Apache-2.0",
+    "task": "audio-classification",
+    "local_path": "models/sound/yamnet.onnx",
+    "size_bytes": 16093603,
+    "sha256": "1510041dce24a2e9e84ec546807ac408ae496da6d1ed41bc3ccba649623f8e19"
+  },
+  "yamnet-labels": {
+    "filename": "yamnet_class_map.csv",
+    "source_url": "https://huggingface.co/zeropointnine/yamnet-onnx/resolve/main/yamnet_class_map.csv",
+    "license": "Apache-2.0",
+    "task": "labels",
+    "local_path": "models/sound/yamnet_class_map.csv",
+    "size_bytes": 14096,
+    "sha256": "cdf24d193e196d9e95912a2667051ae203e92a2ba09449218ccb40ef787c6df2"
+  }
+}

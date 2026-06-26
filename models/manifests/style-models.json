@@ -1,0 +1,29 @@
+{
+  "mosaic-9": {
+    "filename": "mosaic-9.onnx",
+    "source_url": "https://github.com/onnx/models/raw/main/validated/vision/style_transfer/fast_neural_style/model/mosaic-9.onnx",
+    "license": "BSD-3-Clause",
+    "task": "neural-style-transfer",
+    "local_path": "models/style/mosaic-9.onnx",
+    "size_bytes": 6728029,
+    "sha256": "fa646dedade881243f8d5a2ceb7de2b93675b21fc24f7482894ac4851a9a0a47"
+  },
+  "candy-9": {
+    "filename": "candy-9.onnx",
+    "source_url": "https://github.com/onnx/models/raw/main/validated/vision/style_transfer/fast_neural_style/model/candy-9.onnx",
+    "license": "BSD-3-Clause",
+    "task": "neural-style-transfer",
+    "local_path": "models/style/candy-9.onnx",
+    "size_bytes": 6728029,
+    "sha256": "9d11a3529d1e547da6ae07201d93484dbab2ec0a3614535752c8f40f0fe2968a"
+  },
+  "rain-princess-9": {
+    "filename": "rain-princess-9.onnx",
+    "source_url": "https://github.com/onnx/models/raw/main/validated/vision/style_transfer/fast_neural_style/model/rain-princess-9.onnx",
+    "license": "BSD-3-Clause",
+    "task": "neural-style-transfer",
+    "local_path": "models/style/rain-princess-9.onnx",
+    "size_bytes": 6728029,
+    "sha256": "4162912e6f75fedef6f810ae989b9e10d3d5d43308dab34b027c850cf255e152"
+  }
+}
